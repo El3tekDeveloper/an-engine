@@ -1,0 +1,50 @@
+[scene uid="2023654085"]
+
+[game_object name="Main Camera" uid="2964652027"]
+- [component type_name="Transform"]
+  - position = 0,2.3,8
+  - rotation = -0.17364818,0,0,0.9848077
+  - scale = 1,1,1
+- [component type_name="Camera"]
+  - fov = 60.000000
+  - near_plane = 0.100000
+  - far_plane = 100.000000
+
+[game_object name="Earth" uid="1781147387"]
+- [component type_name="Transform"]
+  - position = -3.9614673,0,-0.55387414
+  - rotation = 0.4499461,0.44994134,0.44994506,-0.7791421
+  - scale = 1,1,1
+- [component type_name="MeshRenderer"]
+  - mesh = Mesh(Sphere)
+  - materials = [Material(2732304411)]
+
+[game_object name="Sun" uid="2687758939"]
+- [component type_name="Transform"]
+  - position = 0,0,0
+  - rotation = -0.17533661,-0.1753329,-0.17533916,0.97094566
+  - scale = 2.5,2.5,2.5
+- [component type_name="MeshRenderer"]
+  - mesh = Mesh(Sphere)
+  - materials = [Material(1530567520)]
+
+[game_object name="Moon" uid="1831672012"]
+- [component type_name="Transform"]
+  - position = -4.951834,0.13670522,-0.69234264
+  - rotation = 0.4499461,0.44994134,0.44994506,-0.7791421
+  - scale = 0.5,0.5,0.5
+- [component type_name="MeshRenderer"]
+  - mesh = Mesh(Sphere)
+  - materials = [Material(2918446339)]
+
+[game_object name="Player" uid="71229300"]
+- [component type_name="Transform"]
+  - position = 2.4551337,0,0
+  - rotation = 0,-0,-0.8861294,-0.46343789
+  - scale = 1,1.5,1
+- [component type_name="LuaBehaviour"]
+  - script_path = assets/scripts/player.lua
+- [component type_name="MeshRenderer"]
+  - mesh = Mesh(Cube)
+  - materials = [Material(2918446339)]
+
