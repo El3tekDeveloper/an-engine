@@ -6,6 +6,7 @@ BUILD_DIR=build
 if [ "$1" = "clean" ]; then
     echo "Cleaning..."
     rm -rf build .cache compile_commands.json
+    find . -type d -name ".generated" -exec rm -rf {} +
     exit 0
 fi
 

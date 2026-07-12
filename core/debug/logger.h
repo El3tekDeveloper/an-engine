@@ -5,6 +5,8 @@
 
 #include <fmt/core.h>
 #include <fmt/color.h>
+#include <fmt/format.h>
+#include <cstdio>
 #include <tuple>
 
 namespace Logger {
@@ -57,20 +59,26 @@ namespace Logger {
                     fmt::string_view fmt_str, Args&&... args)
     {
 #if ENGINE_DEBUG_ENABLED
-        auto prefix = fmt::format(fmt::fg(detail::level_color(level)) | fmt::emphasis::bold,
-                                  "[{}]", detail::level_label(level));
+        fmt::memory_buffer buf;
+        fmt::format_to(
+            std::back_inserter(buf),
+            fmt::fg(detail::level_color(level)) | fmt::emphasis::bold,
+            "[{}]", detail::level_label(level)
+        );
 
         if (level == LOG_ERROR || level == LOG_WARN || level == LOG_ASSERT)
-            fmt::print(stderr, "{} ({}:{}) ", prefix, file, line);
+            fmt::format_to(std::back_inserter(buf), " ({}:{}) ", file, line);
         else
-            fmt::print(stderr, "{} ", prefix);
+            fmt::format_to(std::back_inserter(buf), " ");
 
         auto converted = std::make_tuple(detail::make_printable(std::forward<Args>(args))...);
         std::apply([&](auto&... c_args) {
-            fmt::vprint(stderr, fmt_str, fmt::make_format_args(c_args...));
+            fmt::vformat_to(std::back_inserter(buf), fmt_str, fmt::make_format_args(c_args...));
         }, converted);
 
-        fmt::print(stderr, "\n");
+        buf.push_back('\n');
+
+        std::fwrite(buf.data(), 1, buf.size(), stderr);
 #else
         (void)level; (void)file; (void)line; (void)fmt_str;
 #endif

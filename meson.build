@@ -32,7 +32,7 @@ subdir('tools')
 subdir('core')
 subdir('resources')
 subdir('render')
-subdir('scene')
+subdir('scene2')
 subdir('main')
 
 deps = [

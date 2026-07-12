@@ -6,6 +6,7 @@
 #include "core/math/vector3.h"
 #include "core/math/vector3i.h"
 #include "core/math/quaternion.h"
+#include "core/math/vector4.h"
 #include "tools/reflector/type_registry.h"
 #include <format>
 #include <string>
@@ -41,6 +42,15 @@ const bool math_registered = [] {
         [](const void* p) -> std::string {
             const auto& v = *static_cast<const Vector3*>(p);
             return std::format("{},{},{}", v.x, v.y, v.z);
+        },
+        TypeKind::Class
+    );
+
+    register_type<Vector4>(
+        "Vector4",
+        [](const void* p) -> std::string {
+            const auto& v = *static_cast<const Vector4*>(p);
+            return std::format("{},{},{},{}", v.x, v.y, v.z, v.w);
         },
         TypeKind::Class
     );

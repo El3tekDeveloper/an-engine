@@ -1,6 +1,7 @@
 #pragma once
 #include "core/debug/logger.h"
 #include "core/utils/demangle.h"
+#include <any>
 #include <cstddef>
 #include <format>
 #include <string_view>
@@ -218,6 +219,8 @@ inline Type* get_type_by_name(std::string_view name) {
     return nullptr;
 }
 
+using MetaMap = std::unordered_map<std::string, std::any>;
+
 struct Field {
     Type* type = nullptr;
     std::string name;
@@ -226,6 +229,8 @@ struct Field {
     bool has_range = false;
     double range_min = 0.0;
     double range_max = 0.0;
+    
+    MetaMap meta = {};
 
     bool is_valid() const {
         return type != nullptr
@@ -233,6 +238,13 @@ struct Field {
             && offset != static_cast<std::size_t>(-1);
     }
 };
+
+template<typename T>
+const T* get_meta(const MetaMap& meta, std::string_view key) {
+    auto it = meta.find(std::string(key));
+    if (it == meta.end()) return nullptr;
+    return std::any_cast<T>(&it->second);
+}
 
 using InvokeFn = void (*)(void* instance, void** args, void* ret);
 
@@ -243,7 +255,7 @@ struct RefFunction {
     std::string name;
     
     InvokeFn invoke = nullptr;
-    bool is_button = false;
+    MetaMap meta = {};
 
     bool is_valid() const { return !name.empty(); }
 };
@@ -251,34 +263,35 @@ struct RefFunction {
 class TypeClass : public Type {
 public:
     TypeClass() = default;
-    constexpr TypeClass(std::string name, std::size_t size)
+    TypeClass(std::string name, std::size_t size)
         : Type(name, size) { set_kind(TypeKind::Class); }
-
+ 
     std::vector<Field>& get_fields() { return m_fields; }
     std::vector<RefFunction>& get_functions() { return m_functions; }
-
+    MetaMap& get_meta() { return m_meta; }
+ 
     const Field* find_field(const char* field_name) const {
         for (auto& f : m_fields)
             if (!f.name.empty() && std::string_view(f.name) == field_name)
                 return &f;
         return nullptr;
     }
-
+ 
     const RefFunction* find_function(const char* fn_name) const {
         for (auto& fn : m_functions)
             if (!fn.name.empty() && std::string_view(fn.name) == fn_name)
                 return &fn;
         return nullptr;
     }
-
+ 
     TypeClass* (*get_impl)() = nullptr;
     void* (*create_instance)() = nullptr;
     TypeClass* parent_type = nullptr;
-
+ 
     TypeClass* get() {
         return get_impl ? get_impl() : this;
     }
-
+ 
     bool is_a(const TypeClass* other) const {
         const TypeClass* cur = this;
         while (cur) {
@@ -287,10 +300,11 @@ public:
         }
         return false;
     }
-
+ 
 private:
     std::vector<Field> m_fields;
     std::vector<RefFunction> m_functions;
+    MetaMap m_meta;
 };
 
 template<typename T>

@@ -1,6 +1,6 @@
 [scene uid="2023654085"]
 
-[game_object name="Main Camera" uid="2964652027"]
+[game_object name="Main Camera" uid="160681022"]
 - [component type_name="Transform"]
   - position = 0,2.3,8
   - rotation = -0.17364818,0,0,0.9848077
@@ -10,41 +10,41 @@
   - near_plane = 0.100000
   - far_plane = 100.000000
 
-[game_object name="Earth" uid="1781147387"]
+[game_object name="Earth" uid="938917566"]
 - [component type_name="Transform"]
-  - position = -3.9614673,0,-0.55387414
-  - rotation = 0.4499461,0.44994134,0.44994506,-0.7791421
+  - position = 0.13512716,0,-3.997717
+  - rotation = -0.5106352,-0.51063144,-0.5106352,-0.65681756
   - scale = 1,1,1
 - [component type_name="MeshRenderer"]
   - mesh = Mesh(Sphere)
   - materials = [Material(2732304411)]
 
-[game_object name="Sun" uid="2687758939"]
+[game_object name="Sun" uid="2128581581"]
 - [component type_name="Transform"]
   - position = 0,0,0
-  - rotation = -0.17533661,-0.1753329,-0.17533916,0.97094566
+  - rotation = 0.58596456,0.58596456,0.5859643,-0.07186532
   - scale = 2.5,2.5,2.5
 - [component type_name="MeshRenderer"]
   - mesh = Mesh(Sphere)
-  - materials = [Material(1530567520)]
+  - materials = [Material(1206431456)]
 
-[game_object name="Moon" uid="1831672012"]
+[game_object name="Moon" uid="1984158223"]
 - [component type_name="Transform"]
-  - position = -4.951834,0.13670522,-0.69234264
-  - rotation = 0.4499461,0.44994134,0.44994506,-0.7791421
+  - position = 0.16890895,-0.033756092,-4.997146
+  - rotation = -0.5106352,-0.51063144,-0.5106352,-0.65681756
   - scale = 0.5,0.5,0.5
 - [component type_name="MeshRenderer"]
   - mesh = Mesh(Sphere)
-  - materials = [Material(2918446339)]
+  - materials = [Material(2350984088)]
 
-[game_object name="Player" uid="71229300"]
+[game_object name="Player" uid="4252327250"]
 - [component type_name="Transform"]
-  - position = 2.4551337,0,0
-  - rotation = 0,-0,-0.8861294,-0.46343789
+  - position = 3.2553244,0,0
+  - rotation = 0,0,0.8027591,0.59630346
   - scale = 1,1.5,1
 - [component type_name="LuaBehaviour"]
   - script_path = assets/scripts/player.lua
 - [component type_name="MeshRenderer"]
   - mesh = Mesh(Cube)
-  - materials = [Material(2918446339)]
+  - materials = [Material(1214826112)]
 

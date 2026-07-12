@@ -1,4 +1,5 @@
 #include "reflector.h"
+#include "reflector_plugins.inc"
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include <clang/ASTMatchers/ASTMatchers.h>
 #include <clang/Frontend/CompilerInstance.h>

@@ -1,3 +1,3 @@
 src += files(
-    'main2.cpp'
+    'input.cpp'
 )

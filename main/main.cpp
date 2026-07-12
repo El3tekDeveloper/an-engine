@@ -2,7 +2,7 @@
 #include "core/debug/logger.h"
 #include "core/memory/bump_allocator.h"
 #include "core/memory/memory.h"
-#include "core/platform/platform.h"
+#include "core/os/platform.h"
 #include "core/math/math_utils.h"
 #include "render/renderer.h"
 #include "resources/mesh.h"

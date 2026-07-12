@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <filesystem>
 #include <glad/glad.h>
 #include "core/utils/uuid.h"
 #include "resources/texture.h"
@@ -27,6 +28,8 @@ public:
     }
 
     bool load(const std::string& file_path) override {
+        LOG_INFO("CWD: {}", std::filesystem::current_path().string());
+        LOG_INFO("Exists: {}", std::filesystem::exists(file_path));
         if (!image.load_from_file(file_path, true)) {
             LOG_ERROR("Failed to load texture: '{}'", file_path.c_str());
             return false;

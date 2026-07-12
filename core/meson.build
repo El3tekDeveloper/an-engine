@@ -1,4 +1,5 @@
 subdir('io')
 subdir('memory')
-subdir('platform')
+subdir('input')
 subdir('math')
+subdir('os')

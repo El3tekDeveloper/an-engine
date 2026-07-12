@@ -1,14 +1,18 @@
-#include "lua_bindings.h"
+#pragma once
+#include "core/math/color.h"
 #include "core/math/vector3.h"
 #include "core/math/quaternion.h"
 #include "core/os/time.h"
 #include "resources/material.h"
-#include "resources/resource_manager.h"
-#include "scene/transform_component.h"
-#include "scene/game_object.h"
 #include "resources/mesh.h"
+#include "resources/resource_manager.h"
+#include "sol/raii.hpp"
 #include "sol/table.hpp"
 #include "tools/reflector/type_registry.h"
+#include "scene2/render_system.h"
+#include "scene2/game_object.h"
+#include "component.h"
+#include <sol/sol.hpp>
 
 struct ArgBox {
     float f{}; int i{}; bool b{}; std::string s{};
@@ -70,7 +74,7 @@ static void field_set(void* base, const Field& f, sol::object v) {
     else if (tn == "Material") *static_cast<Material*>(p) = v.as<Material>();
 }
 
-void register_lua_bindings(sol::state& lua) {
+static inline void register_lua_bindings(sol::state& lua) {
     sol::table time_table = lua.create_table();
     time_table.set_function("delta_time", []() {
         return Time.delta_time();
@@ -87,7 +91,7 @@ void register_lua_bindings(sol::state& lua) {
     time_table.set_function("frame_count", []() {
         return Time.frame_count();
     });
-    
+
     time_table.set_function("get_time_scale", []() {
         return Time.time_scale;
     });
@@ -98,10 +102,11 @@ void register_lua_bindings(sol::state& lua) {
 
     sol::table resource_manager_table = lua.create_table();
     resource_manager_table.set_function("get_texture", [](const std::string& path) {
-        return ResourceManager.get_texture(path);
+        return ResourceManager.load<Texture>(path);
     });
     resource_manager_table.set_function("create_material", []() {
-        return ResourceManager.create_material();
+        auto mat = ResourceManager.create<Material>();
+        return mat;
     });
     lua["ResourceManager"] = resource_manager_table;
 
@@ -131,7 +136,7 @@ void register_lua_bindings(sol::state& lua) {
             );
         }
     );
-
+    
     lua.new_usertype<Quaternion>("Quaternion",
         sol::constructors<Quaternion()>(),
         "x", &Quaternion::_x,
@@ -148,6 +153,14 @@ void register_lua_bindings(sol::state& lua) {
                 q._x, q._y, q._z, q._w
             );
         }
+    );
+
+    lua.new_usertype<Color>("Color",
+        sol::constructors<Color(float, float, float, float)>(),
+        "r", &Color::r,
+        "g", &Color::g,
+        "b", &Color::b,
+        "a", &Color::a
     );
 
     lua.new_usertype<Material>("Material",
@@ -197,7 +210,7 @@ void register_lua_bindings(sol::state& lua) {
         "type_name", &Component::get_type_name,
         sol::meta_function::index, [&lua](Component& c, const std::string& field) -> sol::object {
             TypeClass* tc = get_class_by_name(c.get_type_name());
-            
+
             if (const RefFunction* fn = tc->find_function(field.c_str())) {
                 Component* self = &c;
                 return sol::make_object(lua, sol::as_function(
@@ -227,22 +240,42 @@ void register_lua_bindings(sol::state& lua) {
             if (f) field_set(&c, *f, value);
         }
     );
-    
+
     lua.new_usertype<GameObject>("GameObject",
-        "name", sol::property(&GameObject::get_name, &GameObject::set_name),
-        "active", sol::property(&GameObject::is_active, &GameObject::set_active),
-        "transform", sol::property([](GameObject& go) -> Transform& { return go.transform; }),
+        "transform", sol::property([](GameObject& go) -> Transform& { return go.transform(); }),
 
         "add_component", [](GameObject& go, TypeClass* tc) -> Component* {
-            static TypeClass* component_class = get_class_by_name("Component");
-            if (!tc || !tc->create_instance || !tc->is_a(component_class)) return nullptr;
-            return &go.add_component(tc);
+            if (!tc) {
+                LOG_ERROR("add_component: called with a nil type (class not reflected?)");
+                return nullptr;
+            }
+            const ComponentTypeOps* ops = find_component_ops(tc);
+            if (!ops || !ops->add) {
+                LOG_ERROR("add_component: '{}' is not registered as a component", tc->get_name());
+                return nullptr;
+            }
+            return ops->add(*go.scene, go.id);
         },
         "get_component", [](GameObject& go, TypeClass* tc) -> Component* {
-            return go.find_component(tc->get_name());
+            if (!tc) {
+                LOG_ERROR("get_component: called with a nil type (class not reflected?)");
+                return nullptr;
+            }
+            const ComponentTypeOps* ops = find_component_ops(tc);
+            if (!ops || !ops->has || !ops->get) {
+                LOG_ERROR("get_component: '{}' is not registered as a component (missing Component base?)", tc->get_name());
+                return nullptr;
+            }
+            if (!ops->has(*go.scene, go.id)) return nullptr;
+            return ops->get(*go.scene, go.id);
         },
         "has_component", [](GameObject& go, TypeClass* tc) -> bool {
-            return go.find_component(tc->get_name()) != nullptr;
+            if (!tc) {
+                LOG_ERROR("has_component: called with a nil type (class not reflected?)");
+                return false;
+            }
+            const ComponentTypeOps* ops = find_component_ops(tc);
+            return ops && ops->has && ops->has(*go.scene, go.id);
         }
     );
 }

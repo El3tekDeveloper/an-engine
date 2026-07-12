@@ -1,0 +1,256 @@
+#pragma once
+#include <string>
+
+namespace Keyboard {
+
+enum class Key {
+    None = 0,
+    Special = (1 << 22),
+    Escape = Special | 0x01,
+    Tab = Special | 0x02,
+    Backtab = Special | 0x03,
+    Backspace = Special | 0x04,
+    Enter = Special | 0x05,
+    KpEnter = Special | 0x06,
+    Insert = Special | 0x07,
+    Delete = Special | 0x08,
+    Pause = Special | 0x09,
+    Print = Special | 0x0A,
+    Sysreq = Special | 0x0B,
+    Clear = Special | 0x0C,
+    Home = Special | 0x0D,
+    End = Special | 0x0E,
+    Left = Special | 0x0F,
+    Up = Special | 0x10,
+    Right = Special | 0x11,
+    Down = Special | 0x12,
+    PageUp = Special | 0x13,
+    PageDown = Special | 0x14,
+    Shift = Special | 0x15,
+    Ctrl = Special | 0x16,
+    Meta = Special | 0x17,
+#if defined(MACOS_ENABLED)
+    CmdOrCtrl = Meta,
+#else
+    CmdOrCtrl = Ctrl,
+#endif
+    Alt = Special | 0x18,
+    CapsLock = Special | 0x19,
+    NumLock = Special | 0x1A,
+    ScrollLock = Special | 0x1B,
+    F1 = Special | 0x1C,
+    F2 = Special | 0x1D,
+    F3 = Special | 0x1E,
+    F4 = Special | 0x1F,
+    F5 = Special | 0x20,
+    F6 = Special | 0x21,
+    F7 = Special | 0x22,
+    F8 = Special | 0x23,
+    F9 = Special | 0x24,
+    F10 = Special | 0x25,
+    F11 = Special | 0x26,
+    F12 = Special | 0x27,
+    F13 = Special | 0x28,
+    F14 = Special | 0x29,
+    F15 = Special | 0x2A,
+    F16 = Special | 0x2B,
+    F17 = Special | 0x2C,
+    F18 = Special | 0x2D,
+    F19 = Special | 0x2E,
+    F20 = Special | 0x2F,
+    F21 = Special | 0x30,
+    F22 = Special | 0x31,
+    F23 = Special | 0x32,
+    F24 = Special | 0x33,
+    F25 = Special | 0x34,
+    F26 = Special | 0x35,
+    F27 = Special | 0x36,
+    F28 = Special | 0x37,
+    F29 = Special | 0x38,
+    F30 = Special | 0x39,
+    F31 = Special | 0x3A,
+    F32 = Special | 0x3B,
+    F33 = Special | 0x3C,
+    F34 = Special | 0x3D,
+    F35 = Special | 0x3E,
+    KpMultiply = Special | 0x81,
+    KpDivide = Special | 0x82,
+    KpSubtract = Special | 0x83,
+    KpPeriod = Special | 0x84,
+    KpAdd = Special | 0x85,
+    Kp0 = Special | 0x86,
+    Kp1 = Special | 0x87,
+    Kp2 = Special | 0x88,
+    Kp3 = Special | 0x89,
+    Kp4 = Special | 0x8A,
+    Kp5 = Special | 0x8B,
+    Kp6 = Special | 0x8C,
+    Kp7 = Special | 0x8D,
+    Kp8 = Special | 0x8E,
+    Kp9 = Special | 0x8F,
+    Menu = Special | 0x42,
+    Hyper = Special | 0x43,
+    Help = Special | 0x45,
+    Back = Special | 0x48,
+    Forward = Special | 0x49,
+    Stop = Special | 0x4A,
+    Refresh = Special | 0x4B,
+    VolumeDown = Special | 0x4C,
+    VolumeMute = Special | 0x4D,
+    VolumeUp = Special | 0x4E,
+    MediaPlay = Special | 0x54,
+    MediaStop = Special | 0x55,
+    MediaPrevious = Special | 0x56,
+    MediaNext = Special | 0x57,
+    MediaRecord = Special | 0x58,
+    Homepage = Special | 0x59,
+    Favorites = Special | 0x5A,
+    Search = Special | 0x5B,
+    Standby = Special | 0x5C,
+    OpenUrl = Special | 0x5D,
+    LaunchMail = Special | 0x5E,
+    LaunchMedia = Special | 0x5F,
+    Launch0 = Special | 0x60,
+    Launch1 = Special | 0x61,
+    Launch2 = Special | 0x62,
+    Launch3 = Special | 0x63,
+    Launch4 = Special | 0x64,
+    Launch5 = Special | 0x65,
+    Launch6 = Special | 0x66,
+    Launch7 = Special | 0x67,
+    Launch8 = Special | 0x68,
+    Launch9 = Special | 0x69,
+    LaunchA = Special | 0x6A,
+    LaunchB = Special | 0x6B,
+    LaunchC = Special | 0x6C,
+    LaunchD = Special | 0x6D,
+    LaunchE = Special | 0x6E,
+    LaunchF = Special | 0x6F,
+
+    Globe = Special | 0x70,
+    Keyboard = Special | 0x71,
+    JisEisu = Special | 0x72,
+    JisKana = Special | 0x73,
+
+    Unknown = Special | 0x7FFFFF,
+
+    Space = 0x0020,
+    Exclam = 0x0021,
+    Quotedbl = 0x0022,
+    Numbersign = 0x0023,
+    Dollar = 0x0024,
+    Percent = 0x0025,
+    Ampersand = 0x0026,
+    Apostrophe = 0x0027,
+    ParenLeft = 0x0028,
+    ParenRight = 0x0029,
+    Asterisk = 0x002A,
+    Plus = 0x002B,
+    Comma = 0x002C,
+    Minus = 0x002D,
+    Period = 0x002E,
+    Slash = 0x002F,
+    Key0 = 0x0030,
+    Key1 = 0x0031,
+    Key2 = 0x0032,
+    Key3 = 0x0033,
+    Key4 = 0x0034,
+    Key5 = 0x0035,
+    Key6 = 0x0036,
+    Key7 = 0x0037,
+    Key8 = 0x0038,
+    Key9 = 0x0039,
+    Colon = 0x003A,
+    Semicolon = 0x003B,
+    Less = 0x003C,
+    Equal = 0x003D,
+    Greater = 0x003E,
+    Question = 0x003F,
+    At = 0x0040,
+    A = 0x0041,
+    B = 0x0042,
+    C = 0x0043,
+    D = 0x0044,
+    E = 0x0045,
+    F = 0x0046,
+    G = 0x0047,
+    H = 0x0048,
+    I = 0x0049,
+    J = 0x004A,
+    K = 0x004B,
+    L = 0x004C,
+    M = 0x004D,
+    N = 0x004E,
+    O = 0x004F,
+    P = 0x0050,
+    Q = 0x0051,
+    R = 0x0052,
+    S = 0x0053,
+    T = 0x0054,
+    U = 0x0055,
+    V = 0x0056,
+    W = 0x0057,
+    X = 0x0058,
+    Y = 0x0059,
+    Z = 0x005A,
+    BracketLeft = 0x005B,
+    Backslash = 0x005C,
+    BracketRight = 0x005D,
+    AsciiCircum = 0x005E,
+    Underscore = 0x005F,
+    QuoteLeft = 0x0060,
+    BraceLeft = 0x007B,
+    Bar = 0x007C,
+    BraceRight = 0x007D,
+    AsciiTilde = 0x007E,
+    Yen = 0x00A5,
+    Section = 0x00A7,
+
+    Count
+};
+
+enum class KeyModifierMask {
+	CodeMask = ((1 << 23) - 1),
+	ModifierMask = (0x7F << 24),
+	CmdOrCtrl = (1 << 24),
+	Shift = (1 << 25),
+	Alt = (1 << 26),
+	Meta = (1 << 27),
+	Ctrl = (1 << 28),
+	Kpad = (1 << 29),
+	GroupSwitch = (1 << 30)
+};
+
+enum class KeyLocation {
+    Unspecified,
+    Left,
+    Right
+};
+
+constexpr Key operator&(Key a, Key b) {
+	return (Key)((int)a & (int)b);
+}
+
+constexpr Key &operator|=(Key &a, Key b) {
+	a = static_cast<Key>(static_cast<int>(a) | static_cast<int>(b));
+	return a;
+}
+
+constexpr Key &operator|=(Key &a, KeyModifierMask b) {
+	a = static_cast<Key>(static_cast<int>(a) | static_cast<int>(b));
+	return a;
+}
+
+constexpr Key operator&(Key a, KeyModifierMask b) {
+	return (Key)((int)a & (int)b);
+}
+
+std::string keycode_at_string(Key code);
+bool keycode_has_unicode(Key code);
+
+Key find_keycode(const std::string& keycode_string);
+std::string find_keycode_name(Key code);
+
+std::string_view keycode_get_name_by_index(int index);
+
+} // namespace Keyboard

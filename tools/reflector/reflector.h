@@ -1,4 +1,5 @@
 #pragma once
+#include "generator_plugin.h"
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/Attr.h>
 #include <clang/AST/Decl.h>
@@ -11,8 +12,38 @@
 #include <llvm/Support/raw_ostream.h>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 using MatchFinder = clang::ast_matchers::MatchFinder;
+
+inline clang::Attr* find_annotation(clang::Decl* decl, llvm::StringRef prefix) {
+    for (clang::Attr* attr : decl->attrs()) {
+        auto* annotate = clang::dyn_cast<clang::AnnotateAttr>(attr);
+        if (annotate && annotate->getAnnotation().starts_with(prefix))
+            return attr;
+    }
+    return nullptr;
+}
+
+inline bool extract_range(clang::Decl* decl, std::string& out_min, std::string& out_max) {
+    clang::Attr* attr = find_annotation(decl, "reflect-range");
+    if (!attr) return false;
+
+    auto* annotate = clang::dyn_cast<clang::AnnotateAttr>(attr);
+    if (!annotate) return false;
+
+    llvm::StringRef full = annotate->getAnnotation();
+    auto semi = full.find(';');
+    if (semi == llvm::StringRef::npos) return false;
+
+    llvm::StringRef payload = full.substr(semi + 1);
+    auto comma = payload.find(',');
+    if (comma == llvm::StringRef::npos) return false;
+
+    out_min = payload.substr(0, comma).str();
+    out_max = payload.substr(comma + 1).str();
+    return true;
+}
 
 class ReflectedClass {
 public:
@@ -41,7 +72,7 @@ public:
             loc = sm.getFileLoc(loc);
             if (loc.isValid()) {
                 llvm::StringRef filePath = sm.getFilename(loc);
-                static constexpr llvm::StringLiteral kMarkers[] = { "scene/", "." };
+                static constexpr llvm::StringLiteral kMarkers[] = { "scene/", "./" };
                 llvm::StringRef rel = filePath;
                 for (auto marker : kMarkers) {
                     auto pos = filePath.find(marker);
@@ -53,6 +84,9 @@ public:
                 os << "#include \"" << rel.str() << "\"\n";
             }
         }
+
+        for (auto& plugin : GeneratorRegistry::instance().plugins())
+            plugin->on_class_begin(m_record, {ctx, &os, type, type_safe, ""});
 
         os << "\n";
         os << "template<>\n";
@@ -74,15 +108,16 @@ public:
 
         for (const clang::FieldDecl* field : m_fields) {
             clang::Attr* export_attr = find_annotation(const_cast<clang::FieldDecl*>(field), "reflect-export");
-            if (!export_attr) continue;
+            if (!export_attr) {
+                for (auto& plugin : GeneratorRegistry::instance().plugins())
+                    plugin->on_field(field, {ctx, &os, type, type_safe, ""});
+                continue;
+            }
 
             const std::string fname = field->getNameAsString();
-            clang::QualType qt      = field->getType().getUnqualifiedType();
-            const std::string ftype = qt.getAsString();
-
-            std::string range_min, range_max;
-            bool has_range = field->getType()->isArithmeticType()
-                && extract_range(const_cast<clang::FieldDecl*>(field), range_min, range_max);
+            clang::QualType qt = field->getType().getUnqualifiedType();
+            clang::PrintingPolicy policy(ctx->getLangOpts());
+            const std::string ftype = qt.getAsString(policy);
 
             os << "    {\n";
             os << "        static const std::string_view _fname_" << fname << " = \"" << fname << "\";\n";
@@ -92,22 +127,21 @@ public:
             os << "        f.offset = offsetof(" << type << ", " << fname << ");\n";
             os << "        f.type = get_type<"<< ftype <<">();\n";
             os << "        f.type->set_name(_ftype_" << fname << ");\n";
-            if (has_range) {
-                os << "        f.has_range = true;\n";
-                os << "        f.range_min = " << range_min << ";\n";
-                os << "        f.range_max = " << range_max << ";\n";
-            }
+
+            for (auto& plugin : GeneratorRegistry::instance().plugins())
+                plugin->on_field(field, {ctx, &os, type, type_safe, "f"});
+
             os << "        c.get_fields().push_back(f);\n";
             os << "    }\n";
         }
 
         for (const clang::FunctionDecl* func : m_functions) {
             clang::Attr* export_attr = find_annotation(const_cast<clang::FunctionDecl*>(func), "reflect-export");
-            if (!export_attr) continue;
-
-            bool is_button = func->getReturnType()->isVoidType()
-                && func->getNumParams() == 0
-                && find_annotation(const_cast<clang::FunctionDecl*>(func), "reflect-button") != nullptr;
+            if (!export_attr) {
+                for (auto& plugin : GeneratorRegistry::instance().plugins())
+                    plugin->on_function(func, {ctx, &os, type, type_safe, ""});
+                continue;
+            }
 
             const std::string fname   = func->getNameAsString();
             clang::QualType   rqt     = func->getReturnType().getUnqualifiedType();
@@ -123,9 +157,8 @@ public:
             if (rettype != "void") {
                 os << "        fn.return_value.type   = get_type<" << rettype << ">();\n";
             }
-            if (is_button) {
-                os << "        fn.is_button = true;\n";
-            }
+            for (auto& plugin : GeneratorRegistry::instance().plugins())
+                plugin->on_function(func, {ctx, &os, type, type_safe, "fn"});
 
             for (unsigned i = 0; i < func->getNumParams(); ++i) {
                 const clang::ParmVarDecl* p     = func->getParamDecl(i);
@@ -166,6 +199,9 @@ public:
             os << "    }\n";
         }
 
+        for (auto& plugin : GeneratorRegistry::instance().plugins())
+            plugin->on_class_end(m_record, {ctx, &os, type, type_safe, "c"});
+
         os << "\n    return &c;\n";
         os << "}\n\n";
 
@@ -177,7 +213,7 @@ public:
         os << "        }\n";
         os << "    };\n";
         os << "    inline " << type_safe << "_AutoRegister " << type_safe << "_auto_register_instance;\n";
-        os << "}\n\n";
+        os << "}\n\n\n";
     }
 
 private:
@@ -190,35 +226,6 @@ private:
         std::string out = s;
         for (char& c : out) if (c == ':') c = '_';
         return out;
-    }
-
-    static clang::Attr* find_annotation(clang::Decl* decl, llvm::StringRef prefix) {
-        for (clang::Attr* attr : decl->attrs()) {
-            auto* annotate = clang::dyn_cast<clang::AnnotateAttr>(attr);
-            if (annotate && annotate->getAnnotation().starts_with(prefix))
-                return attr;
-        }
-        return nullptr;
-    }
-
-    static bool extract_range(clang::Decl* decl, std::string& out_min, std::string& out_max) {
-        clang::Attr* attr = find_annotation(decl, "reflect-range");
-        if (!attr) return false;
-
-        auto* annotate = clang::dyn_cast<clang::AnnotateAttr>(attr);
-        if (!annotate) return false;
-
-        llvm::StringRef full = annotate->getAnnotation();
-        auto semi = full.find(';');
-        if (semi == llvm::StringRef::npos) return false;
-
-        llvm::StringRef payload = full.substr(semi + 1);
-        auto comma = payload.find(',');
-        if (comma == llvm::StringRef::npos) return false;
-
-        out_min = payload.substr(0, comma).str();
-        out_max = payload.substr(comma + 1).str();
-        return true;
     }
 };
 
@@ -239,15 +246,27 @@ public:
     }
 
     void onEndOfTranslationUnit() override {
+        // Multiple reflected classes can share the same source file, and
+        // therefore the same generated output path. Group them by target
+        // file and open each file exactly once, writing every class that
+        // belongs to it in turn -- otherwise each class after the first
+        // truncates and overwrites the ones written before it.
+        std::unordered_map<std::string, std::vector<ReflectedClass*>> by_file;
         for (auto& cls : m_classes) {
+            by_file[cls.file_name()].push_back(&cls);
+        }
+
+        for (auto& [file_name, classes] : by_file) {
             std::error_code ec;
-            llvm::raw_fd_ostream file(cls.file_name(), ec);
+            llvm::raw_fd_ostream file(file_name, ec);
             if (ec) {
-                llvm::errs() << "reflect: cannot open '" << cls.file_name()
+                llvm::errs() << "reflect: cannot open '" << file_name
                              << "': " << ec.message() << "\n";
                 continue;
             }
-            cls.generate(m_context, file);
+            for (ReflectedClass* cls : classes) {
+                cls->generate(m_context, file);
+            }
         }
         m_classes.clear();
     }
@@ -293,6 +312,40 @@ private:
             m_classes.back().add_function(f);
     }
 };
+
+class RangePlugin : public GeneratorPlugin {
+public:
+    void on_field(const clang::FieldDecl* field, const GenContext& gc) override {
+        if (gc.scope_var.empty() || !field->getType()->isArithmeticType())
+            return;
+ 
+        std::string range_min, range_max;
+        if (!extract_range(const_cast<clang::FieldDecl*>(field), range_min, range_max))
+            return;
+
+        *gc.os << "        " << gc.scope_var << ".meta[\"range_min\"] = static_cast<double>(" << range_min << ");\n";
+        *gc.os << "        " << gc.scope_var << ".meta[\"range_max\"] = static_cast<double>(" << range_max << ");\n";
+    }
+};
+ 
+REGISTER_GENERATOR(RangePlugin)
+ 
+class ButtonPlugin : public GeneratorPlugin {
+public:
+    void on_function(const clang::FunctionDecl* func, const GenContext& gc) override {
+        if (gc.scope_var.empty())
+            return;
+ 
+        bool is_button = func->getReturnType()->isVoidType()
+            && func->getNumParams() == 0
+            && find_annotation(const_cast<clang::FunctionDecl*>(func), "reflect-button") != nullptr;
+ 
+        if (is_button)
+            *gc.os << "        " << gc.scope_var << ".meta[\"is_button\"] = true;\n";
+    }
+};
+ 
+REGISTER_GENERATOR(ButtonPlugin)
 
 inline ClassFinder class_finder;
 inline MatchFinder finder;

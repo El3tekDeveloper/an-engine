@@ -1,4 +1,5 @@
 #include "type_registry.h"
+#include <string>
 #include <typeindex>
 #include <unordered_map>
 
@@ -7,6 +8,12 @@ std::unordered_map<std::type_index, Type> KNOWN_TYPES = {
     {typeid(uint32_t), {"uint32_t", sizeof(uint32_t), &to_string_data_type<uint32_t>}},
     {typeid(float),    {"float", sizeof(float), &to_string_data_type<float>}},
     {typeid(double),   {"double", sizeof(double), &to_string_data_type<double>}},
+
+    {typeid(bool), {"bool", sizeof(bool),
+        [](const void* p) -> std::string {
+            return std::to_string(*static_cast<const bool*>(p));
+        }
+    }},
 
     {typeid(char*), {"char*", sizeof(char*),
         [](const void* p) -> std::string {

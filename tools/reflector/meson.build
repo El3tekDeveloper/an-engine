@@ -23,10 +23,29 @@ src += files(
     'type_registry.cpp'
 )
 
+plugins_includer_exe = executable(
+    'plugins_includer',
+    'plugins_includer.cpp',
+    native: true,
+    cpp_args: ['-std=c++17'],
+)
+
+plugins_inc = custom_target(
+    'reflector_plugins_inc',
+    output: 'reflector_plugins.inc',
+    command: [
+        plugins_includer_exe,
+        meson.project_source_root(),
+        '@OUTPUT@',
+    ],
+    build_always_stale: true,
+)
+
 reflect_lib = shared_library(
     'libreflect',
     'plugin_main.cpp',
-    include_directories: includes,
+    plugins_inc,
+    include_directories: [includes, include_directories('.')],
     dependencies: [llvm_dep],
     name_prefix: '',
     install: false,

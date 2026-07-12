@@ -1,6 +1,6 @@
 #include "core/debug/logger.h"
 #include "core/memory/memory.h"
-#include "core/time/time.h"
+#include "core/os/time.h"
 #include "render/renderer.h"
 #include "resources/mesh.h"
 #include "resources/resource_manager.h"
@@ -30,16 +30,16 @@ int main() {
         return -1;
     }
     
-    Material* earth_mat = ResourceManager.create_material();
-    earth_mat->set_albedo(ResourceManager.get_texture("assets/textures/2k_earth_daymap.jpg"));
-    earth_mat->set_normal(ResourceManager.get_texture("assets/textures/2k_earth_normal_map.jpg"));
-    earth_mat->set_metalrough(ResourceManager.get_texture("assets/textures/2k_earth_specular_map.jpg"));
+    Material* earth_mat = ResourceManager.create<Material>();
+    earth_mat->set_albedo(ResourceManager.load<Texture>("assets/textures/2k_earth_daymap.jpg"));
+    earth_mat->set_normal(ResourceManager.load<Texture>("assets/textures/2k_earth_normal_map.jpg"));
+    earth_mat->set_metalrough(ResourceManager.load<Texture>("assets/textures/2k_earth_specular_map.jpg"));
 
-    Material* sun_mat = ResourceManager.create_material();
-    sun_mat->set_albedo(ResourceManager.get_texture("assets/textures/2k_sun.jpg"));
+    Material* sun_mat = ResourceManager.create<Material>();
+    sun_mat->set_albedo(ResourceManager.load<Texture>("assets/textures/2k_sun.jpg"));
     
-    Material* moon_mat = ResourceManager.create_material();
-    moon_mat->set_albedo(ResourceManager.get_texture("assets/textures/2k_moon.jpg"));   
+    Material* moon_mat = ResourceManager.create<Material>();
+    moon_mat->set_albedo(ResourceManager.load<Texture>("assets/textures/2k_moon.jpg"));   
  
     GameObject& camera = scene.create_camera("Main Camera");
     camera.transform.position = Vector3(0.0f, 2.3f, 8.0f);
@@ -90,7 +90,7 @@ int main() {
         platform.swap_buffers();
     }
     
-    ResourceManager.destroy_all();
+    ResourceManager.clear_all();
     renderer.destroy();
     platform.shutdown();
     scene.save("assets/scene.scene");

@@ -1,13 +1,12 @@
 #pragma once
 #include <array>
 #include <bitset>
-#include <cstddef>
 
 class Component;
 
 namespace ECS {
     using ComponentType = std::size_t;
-    constexpr std::size_t MAX_COMPONENETS = 64;
+    constexpr ComponentType MAX_COMPONENETS = 64;
 
     inline ComponentType get_unique_id() {
         static ComponentType last = 0;

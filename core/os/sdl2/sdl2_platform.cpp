@@ -1,4 +1,5 @@
-#include "core/platform/platform.h"
+#include "core/input/input.h"
+#include "core/os/platform.h"
 #include "render/renderer.h"
 #include "core/debug/logger.h"
 #include <SDL2/SDL.h>
@@ -49,12 +50,13 @@ bool Platform::init() {
         return false;
     }
 
-    glViewport(0, 0, window.width, window.height);
     running = true;
     return true;
 }
 
 void Platform::poll_events(Renderer* renderer) {
+    InputSystem::get_singleton().begin_frame();
+    
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
@@ -69,6 +71,8 @@ void Platform::poll_events(Renderer* renderer) {
                 }
                 break;
         }
+
+        InputSystem::get_singleton().poll_event(&event);
     }
 }
 

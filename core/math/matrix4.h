@@ -278,18 +278,15 @@ struct [[nodiscard]] Matrix4 {
         };
     }
 
-    static Matrix4 look_at(
-        float eye_x,    float eye_y,    float eye_z,
-        float center_x, float center_y, float center_z,
-        float up_x,     float up_y,     float up_z)
+    static Matrix4 look_at( Vector3 eye, Vector3 center, Vector3 up)
     {
-        float fx = eye_x - center_x, fy = eye_y - center_y, fz = eye_z - center_z;
+        float fx = eye.x - center.x, fy = eye.y - center.y, fz = eye.z - center.z;
         float fl = std::sqrt(fx*fx + fy*fy + fz*fz);
         fx /= fl; fy /= fl; fz /= fl;
 
-        float rx = up_y*fz - up_z*fy;
-        float ry = up_z*fx - up_x*fz;
-        float rz = up_x*fy - up_y*fx;
+        float rx = up.y*fz - up.z*fy;
+        float ry = up.z*fx - up.x*fz;
+        float rz = up.x*fy - up.y*fx;
         float rl = std::sqrt(rx*rx + ry*ry + rz*rz);
         rx /= rl; ry /= rl; rz /= rl;
 
@@ -298,9 +295,9 @@ struct [[nodiscard]] Matrix4 {
         float uz = fx*ry - fy*rx;
 
         return {
-             rx,  ry,  rz, -(rx*eye_x + ry*eye_y + rz*eye_z),
-             ux,  uy,  uz, -(ux*eye_x + uy*eye_y + uz*eye_z),
-             fx,  fy,  fz, -(fx*eye_x + fy*eye_y + fz*eye_z),
+             rx,  ry,  rz, -(rx*eye.x + ry*eye.y + rz*eye.z),
+             ux,  uy,  uz, -(ux*eye.x + uy*eye.y + uz*eye.z),
+             fx,  fy,  fz, -(fx*eye.x + fy*eye.y + fz*eye.z),
             0.0f, 0.0f, 0.0f, 1.0f
         };
     }

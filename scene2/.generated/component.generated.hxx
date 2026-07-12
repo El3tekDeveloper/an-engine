@@ -2,7 +2,7 @@
 // DO NOT EDIT
 #pragma once
 #include "tools/reflector/type_registry.h"
-#include "scene/component.h"
+#include "./scene2/component.h"
 
 template<>
 inline TypeClass* get_class_impl<Component>() {
@@ -15,18 +15,14 @@ inline TypeClass* get_class_impl<Component>() {
     c.create_instance = []() -> void* { return new Component(); };
 
     {
-        static const std::string _fnname_get_type_name = "get_type_name";
-        static const std::string _fnret_get_type_name = "std::string";
-        RefFunction fn;
-        fn.name = _fnname_get_type_name.c_str();
-        fn.return_value.name = _fnname_get_type_name.c_str();
-        fn.return_value.offset = 0;
-        fn.return_value.type   = get_type<std::string>();
-        fn.invoke = [](void* self, void** args, void* ret) {
-            auto* obj = static_cast<Component*>(self);
-            *static_cast<std::string*>(ret) = obj->get_type_name();
-        };
-        c.get_functions().push_back(fn);
+        static const std::string_view _fname_active = "active";
+        static const std::string_view _ftype_active = "bool";
+        Field f;
+        f.name = _fname_active;
+        f.offset = offsetof(Component, active);
+        f.type = get_type<bool>();
+        f.type->set_name(_ftype_active);
+        c.get_fields().push_back(f);
     }
 
     return &c;
@@ -41,4 +37,5 @@ namespace {
     };
     inline Component_AutoRegister Component_auto_register_instance;
 }
+
 

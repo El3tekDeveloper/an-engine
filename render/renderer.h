@@ -1,6 +1,7 @@
 #pragma once
 #include "core/math/color.h"
-#include "core/platform/platform.h"
+#include "core/math/vector2.h"
+#include "core/os/platform.h"
 #include "core/memory/bump_allocator.h"
 #include "resources/mesh.h"
 #include <vector>
@@ -14,9 +15,11 @@ struct ViewPort {
     int width  = 1280;
     int height = 720;
 
-    void resize(int w, int h) {
-        width  = w;
-        height = h;
+    Vector2 position;
+
+    void resize(int width, int height) {
+        this->width = width;
+        this->height = height;
     }
 
     float aspect_ratio() const {
@@ -48,6 +51,7 @@ public:
     void resize(int width, int height);
     void destroy();
 
+    uint get_output_texture() const;
     bool is_valid() const { return window && window->context; }
 
 private:

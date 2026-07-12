@@ -15,6 +15,7 @@ struct Mesh : Resource {
 public:
     static const Mesh Cube;
     static const Mesh Sphere;
+    static const Mesh Capsule;
 
     explicit Mesh(std::string name, std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<SubMesh> submeshes = {})
         : name(name), vertices(vertices), indices(indices), submeshes(submeshes) {
@@ -24,6 +25,11 @@ public:
                 .index_count = (uint32_t)this->indices.size(),
                 .material_index = 0
             });
+        }
+
+        bounding_radius = 0.0f;
+        for (const Vertex& vertex : this->vertices) {
+            bounding_radius = std::max(bounding_radius, vertex.position.length());
         }
     }
 
@@ -35,10 +41,12 @@ public:
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
     std::vector<SubMesh> submeshes;
+
+    float bounding_radius = 0.0f;
 };
 
 struct MeshInstance {
-    Mesh mesh = Mesh::Cube;
+    const Mesh* mesh = &Mesh::Cube;
     Matrix4 model = Matrix4::Identity;
     std::vector<Material*> materials = {};
 };
@@ -132,4 +140,65 @@ inline const Mesh Mesh::Sphere = []() {
     }
 
     return Mesh("Sphere", vertices, indices);
+}();
+
+inline const Mesh Mesh::Capsule = []() {
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
+
+    const float radius     = 0.5f;
+    const float cylHeight  = 1.0f;
+    const int   slices     = 32;
+    const int   hemiStacks = 8;
+
+    const float halfH = cylHeight * 0.5f;
+    const int   totalRings = 2 * hemiStacks + 2;
+
+    for (int i = 0; i < totalRings; i++) {
+        float phi;
+        float yOff;
+
+        if (i <= hemiStacks) {
+            phi  = (static_cast<float>(i) / hemiStacks) * (float)(M_PI * 0.5);
+            yOff = halfH;
+        } else {
+            int j = i - (hemiStacks + 1);
+            phi  = (float)(M_PI * 0.5) + (static_cast<float>(j) / hemiStacks) * (float)(M_PI * 0.5);
+            yOff = -halfH;
+        }
+
+        float v = static_cast<float>(i) / (totalRings - 1);
+
+        for (int j = 0; j <= slices; j++) {
+            float u = static_cast<float>(j) / slices;
+            float theta = u * (float)(M_PI * 2.0);
+
+            float sx = sin(phi) * cos(theta);
+            float sy = cos(phi);
+            float sz = sin(phi) * sin(theta);
+
+            Vector3 pos    = { sx * radius, sy * radius + yOff, sz * radius };
+            Vector3 normal = Vector3(sx, sy, sz).normalized();
+            Vector2 uv     = { u, v };
+
+            vertices.push_back({ pos, normal, uv });
+        }
+    }
+
+    for (int i = 0; i < totalRings - 1; i++) {
+        for (int j = 0; j < slices; j++) {
+            int first  = i * (slices + 1) + j;
+            int second = first + slices + 1;
+
+            indices.push_back(first);
+            indices.push_back(second);
+            indices.push_back(first + 1);
+
+            indices.push_back(second);
+            indices.push_back(second + 1);
+            indices.push_back(first + 1);
+        }
+    }
+
+    return Mesh("Capsule", vertices, indices);
 }();
