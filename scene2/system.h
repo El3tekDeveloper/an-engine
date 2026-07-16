@@ -10,7 +10,7 @@ public:
     virtual void awake(Scene& scene) {};
     virtual void start(Scene& scene) {};
     virtual void update(Scene& scene) {};
-    virtual void draw(Scene& scene, RenderData& render_data) {};
+    virtual void draw(Scene& scene, ViewPort& viewport, RenderData& render_data) {};
 
 private:
     bool started = false;

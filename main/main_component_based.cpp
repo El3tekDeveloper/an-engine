@@ -31,15 +31,15 @@ int main() {
     }
     
     Material* earth_mat = ResourceManager.create<Material>();
-    earth_mat->set_albedo(ResourceManager.load<Texture>("assets/textures/2k_earth_daymap.jpg"));
-    earth_mat->set_normal(ResourceManager.load<Texture>("assets/textures/2k_earth_normal_map.jpg"));
-    earth_mat->set_metalrough(ResourceManager.load<Texture>("assets/textures/2k_earth_specular_map.jpg"));
+    earth_mat->set_albedo(ResourceManager.load<Texture>("assets://textures/2k_earth_daymap.jpg"));
+    earth_mat->set_normal(ResourceManager.load<Texture>("assets://textures/2k_earth_normal_map.jpg"));
+    earth_mat->set_metalrough(ResourceManager.load<Texture>("assets://textures/2k_earth_specular_map.jpg"));
 
     Material* sun_mat = ResourceManager.create<Material>();
-    sun_mat->set_albedo(ResourceManager.load<Texture>("assets/textures/2k_sun.jpg"));
+    sun_mat->set_albedo(ResourceManager.load<Texture>("assets://textures/2k_sun.jpg"));
     
     Material* moon_mat = ResourceManager.create<Material>();
-    moon_mat->set_albedo(ResourceManager.load<Texture>("assets/textures/2k_moon.jpg"));   
+    moon_mat->set_albedo(ResourceManager.load<Texture>("assets://textures/2k_moon.jpg"));   
  
     GameObject& camera = scene.create_camera("Main Camera");
     camera.transform.position = Vector3(0.0f, 2.3f, 8.0f);
@@ -58,7 +58,7 @@ int main() {
     moon.transform.position = earth.transform.position;
 
     GameObject& player = scene.create_game_object("Player");
-    player.add_component<LuaBehaviour>("assets/scripts/player.lua");
+    player.add_component<LuaBehaviour>("assets://scripts/player.lua");
 
     scene.initialize();
     scene.print_tree();
@@ -93,7 +93,7 @@ int main() {
     ResourceManager.clear_all();
     renderer.destroy();
     platform.shutdown();
-    scene.save("assets/scene.scene");
+    scene.save("assets://scene.scene");
     return 0;
 }
 

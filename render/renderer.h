@@ -1,61 +1,35 @@
 #pragma once
 #include "core/math/color.h"
-#include "core/math/vector2.h"
-#include "core/os/platform.h"
 #include "core/memory/bump_allocator.h"
 #include "resources/mesh.h"
+#include "resources/sprite.h"
 #include <vector>
+#include "viewport.h"
 
 enum class ShaderType {
     Fragment,
     Vertex
 };
 
-struct ViewPort {
-    int width  = 1280;
-    int height = 720;
-
-    Vector2 position;
-
-    void resize(int width, int height) {
-        this->width = width;
-        this->height = height;
-    }
-
-    float aspect_ratio() const {
-        return height > 0 ? (float)width / (float)height : 1.0f;
-    }
-};
-
-struct CameraData {
-    Matrix4 matrix = Matrix4::Identity;
-    ViewPort viewport = {};
-};
-
 struct RenderData {
     Color clear_color = Color::Red;
-    
     CameraData* camera = nullptr;
+    
     std::vector<MeshInstance> mesh_instances;
+    std::vector<SpriteInstance> sprite_instances;
 };
 
 class Renderer {
 public:
     Renderer() {}
-    ~Renderer() {
-        destroy();
-    }
-
-    bool init(Window* window, BumpAllocator* transient_storage);
-    void render(RenderData& render_data);
-    void resize(int width, int height);
+    ~Renderer() { destroy(); }
+ 
+    bool init(BumpAllocator* transient_storage);
+    void render(ViewPort& viewport, RenderData& render_data);
     void destroy();
-
-    uint get_output_texture() const;
-    bool is_valid() const { return window && window->context; }
-
+ 
+    bool is_valid() const { return initialized; }
+ 
 private:
-    Window* window = nullptr;
-    ViewPort* viewport_ptr;
     bool initialized = false;
 };

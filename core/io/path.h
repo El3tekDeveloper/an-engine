@@ -1,10 +1,25 @@
 #pragma once
-
 #include <string>
 #include <filesystem>
 
 namespace IO {
     namespace fs = std::filesystem;
+
+    enum class PathType {
+        Native,
+        Assets,
+        Engine,
+        User,
+    };
+
+    extern fs::path assets_path;
+    extern fs::path engine_path;
+    extern fs::path user_path;
+    
+    inline bool set_engine_path(const std::string& path);
+    inline bool set_assets_path(const std::string& path);
+    inline bool set_user_path(const std::string& path);
+    std::string resolve_path(const std::string& path);
 
     static inline std::string join(const std::string& path, const std::string& file) {
         return (fs::path(path) / file).string();

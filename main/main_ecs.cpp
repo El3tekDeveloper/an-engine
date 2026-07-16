@@ -2,6 +2,7 @@
 #include "core/input/input.h"
 #include "core/memory/memory.h"
 #include "core/os/time.h"
+#include "core/os/application.h"
 #include "render/renderer.h"
 #include "resources/resource_manager.h"
 #include "scene2/lua_script.h"
@@ -13,7 +14,7 @@
 #include <algorithm>
 
 static RenderData render_data = {
-    .clear_color = "#0b0f19"
+    .clear_color = "#314D79"
 };
 
 static Scene scene;
@@ -52,14 +53,34 @@ void spawn_cube(const Vector3& position) {
 int main() {
     BumpAllocator transient_storage(GB(4));
 
-    Platform platform(Window{
-        .title = "Cpp Kart",
+    Application app;
+    if (!app.is_running()) {
+        LOG_ERROR("Application failed to start");
+        return -1;
+    }
+    Window* window = app.create_window(WindowDesc{
+        .title = "ECS (an-engine)",
         .width = 1280,
         .height = 720
     });
+    if (!window) {
+        LOG_ERROR("Window creation failed");
+        return -1;
+    }
+    window->on_close = [&app]() { app.quit(); };
+
+    SwapchainRenderTarget swap_chain(window);
+    ViewPort viewport;
+    viewport.width  = window->get_width();
+    viewport.height = window->get_height();
+    viewport.target = &swap_chain;
+
+    window->on_resize = [&viewport](int w, int h) {
+        viewport.resize(w, h);
+    };
 
     Renderer renderer;
-    if (!renderer.init(&platform.get_window(), &transient_storage)) {
+    if (!renderer.init(&transient_storage)) {
         LOG_ERROR("Renderer init failed");
         return -1;
     }
@@ -81,7 +102,7 @@ int main() {
     camera_transform.rotation = Quaternion::Euler(0.0f, 0.0f, -20.0f);
 
     GameObject ground = scene.create_game_object();
-    ground.add_script<LuaScript>("assets/scripts/ground.lua");
+    ground.add_script<LuaScript>("assets://scripts/ground.lua");
 
     Vector3 box_center = Vector3(0.0f, 3, -1.0f);
     Vector3 box_extents = Vector3(11*2, 3, 11*2);
@@ -94,12 +115,12 @@ int main() {
     float mouse_sensitivity = 0.5f;
     Vector2 camera_angle = Vector2::Zero;
 
-    while (platform.is_running()) {
-        platform.poll_events(&renderer);
-
+    while (app.is_running()) {
+        app.poll_events();
+        
         Time.update();
         scene.update();
-        
+
         // Free Camera Movement
         {
             float mouse_x = Input.get_mouse_delta().x * mouse_sensitivity;
@@ -139,7 +160,7 @@ int main() {
 
             camera_transform.position += movement * camera_speed * Time.delta_time();
         }
-        
+
         spawn_timer += Time.delta_time();
         if (spawn_timer >= spawn_interval) {
             spawn_timer = 0.0f;
@@ -147,13 +168,13 @@ int main() {
             LOG_DEBUG("physics entities: {}", spawn_counter++);
         }
 
-        scene.draw(render_data);
-        renderer.render(render_data);
-        platform.swap_buffers();
+        scene.draw(viewport, render_data);
+        renderer.render(viewport, render_data);
+        window->swap_buffers();
     }
 
     ResourceManager.clear_all();
     renderer.destroy();
-    platform.shutdown();
+    app.destroy_window(window);
     return 0;
 }

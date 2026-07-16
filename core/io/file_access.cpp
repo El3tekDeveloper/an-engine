@@ -1,14 +1,15 @@
 #include "core/io/file_access.h"
 #include "core/debug/logger.h"
+#include "core/io/path.h"
 #include <fstream>
 
 bool IO::exists(const std::string& path) {
-    std::ifstream file(path);
+    std::ifstream file(IO::resolve_path(path));
     return file.good();
 }
 
 size_t IO::get_file_size(const std::string& path) {
-    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    std::ifstream file(IO::resolve_path(path), std::ios::binary | std::ios::ate);
 
     if (!file) {
         LOG_ERROR("Failed to open file: '{}'", path);
@@ -19,7 +20,7 @@ size_t IO::get_file_size(const std::string& path) {
 }
 
 std::string IO::read_file(const std::string& path, BumpAllocator& allocator) { 
-    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    std::ifstream file(IO::resolve_path(path), std::ios::binary | std::ios::ate);
 
     if (!file) {
         LOG_ERROR("Failed to open file: '{}'", path);
@@ -46,7 +47,7 @@ std::string IO::read_file(const std::string& path, BumpAllocator& allocator) {
 }
 
 std::byte* IO::read_bytes(const std::string& path, BumpAllocator& allocator) {
-    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    std::ifstream file(IO::resolve_path(path), std::ios::binary | std::ios::ate);
 
     if (!file) {
         LOG_ERROR("Failed to open file: '{}'", path);
@@ -72,7 +73,7 @@ std::byte* IO::read_bytes(const std::string& path, BumpAllocator& allocator) {
 }
 
 bool IO::write_file(const std::string& path, const std::string& content) {
-    std::ofstream file(path, std::ios::binary);
+    std::ofstream file(IO::resolve_path(path), std::ios::binary);
 
     if (!file)
         return false;
@@ -86,7 +87,7 @@ bool IO::write_bytes(const std::string& path, const void* data, size_t size) {
     if (!data || size == 0)
         return false;
 
-    std::ofstream file(path, std::ios::binary);
+    std::ofstream file(IO::resolve_path(path), std::ios::binary);
 
     if (!file)
         return false;

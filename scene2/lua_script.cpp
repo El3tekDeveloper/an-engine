@@ -16,7 +16,7 @@ void LuaScript::load_script(Scene& scene, Entity entity) {
         sol::lib::string,
         sol::lib::os
     );
-    register_lua_bindings(lua);
+    register_lua_bindings(lua, scene);
 
     lua["entity"] = entity;
     lua["game_object"] = GameObject{ entity, &scene };

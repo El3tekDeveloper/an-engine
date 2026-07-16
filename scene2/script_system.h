@@ -21,7 +21,7 @@ public:
         }
     }
 
-    void draw(Scene& scene, RenderData& rd) override {
+    void draw(Scene& scene, ViewPort& viewport, RenderData& rd) override {
         for (auto entity : scene.get_registry().view<ScriptComponent>()) {
             Script* script = scene.get_component<ScriptComponent>(entity).instance.get();
             if (script) script->draw(scene, entity, rd);

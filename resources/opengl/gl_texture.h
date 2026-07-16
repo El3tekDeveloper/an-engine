@@ -1,7 +1,7 @@
 #pragma once
 #include <algorithm>
-#include <filesystem>
 #include <glad/glad.h>
+#include "core/io/path.h"
 #include "core/utils/uuid.h"
 #include "resources/texture.h"
 #include "core/debug/logger.h"
@@ -28,13 +28,11 @@ public:
     }
 
     bool load(const std::string& file_path) override {
-        LOG_INFO("CWD: {}", std::filesystem::current_path().string());
-        LOG_INFO("Exists: {}", std::filesystem::exists(file_path));
         if (!image.load_from_file(file_path, true)) {
             LOG_ERROR("Failed to load texture: '{}'", file_path.c_str());
             return false;
         }
-        uuid = make_uuid(file_path);
+        uuid = make_uuid(IO::resolve_path(file_path));
         
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id);

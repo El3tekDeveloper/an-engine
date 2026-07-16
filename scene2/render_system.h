@@ -11,6 +11,7 @@
 #include "scene.h"
 #include "registry.h"
 #include "tools/reflector/type_registry.h"
+#include "resources/sprite.h"
 
 struct [[export]] Transform : public Component {
     [[export]] Vector3 position = Vector3::Zero;
@@ -29,9 +30,19 @@ private:
     friend class RenderSystem;
 };
 
+enum class CameraType {
+    Perspective,
+    Orthographic
+};
+
 struct [[export]] Camera : public Component {
+    [[export]] CameraType type = CameraType::Perspective;
     [[export, range(1, 179)]]
     float fov = 60.0f;
+    
+    [[export, range(0.001, 1000)]]
+    float orthographic_size = 5.0f;
+
     [[export, range(0.001, 100)]]
     float near_plane = 0.1f;
     [[export, range(1, 10000)]]
@@ -40,10 +51,10 @@ struct [[export]] Camera : public Component {
 
 struct [[export]] MeshRenderer : public Component {
     MeshRenderer() = default;
-    explicit MeshRenderer(const Mesh& mesh, const std::vector<Material*> materials = {})
+    explicit MeshRenderer(Mesh& mesh, const std::vector<Material*> materials = {})
         : mesh(&mesh), materials(materials) {}
 
-    [[export]] const Mesh* mesh = &Mesh::Cube;
+    [[export]] Mesh* mesh = &Mesh::Cube;
     [[export]] std::vector<Material*> materials = {};
     
     [[export]] bool is_static = false;
@@ -73,13 +84,26 @@ private:
     friend class RenderSystem;
 };
 
+struct [[export]] SpriteRenderer : public Component {
+    SpriteRenderer() = default;
+    explicit SpriteRenderer(Sprite& sprite) : sprite(&sprite) {}
+ 
+    [[export]] Sprite* sprite = nullptr;
+    [[export]] Color color = Color::White;
+ 
+    [[export]] bool flip_x = false;
+    [[export]] bool flip_y = false;
+ 
+    [[export]] int layer = 0;
+};
+
 class RenderSystem : public System {
 public:
     virtual ~RenderSystem() = default;
     
     CameraData camera_data;
 
-    void draw(Scene& scene, RenderData& rd) override {
+    void draw(Scene& scene, ViewPort& viewport, RenderData& rd) override {
         Transform* camera_transform = nullptr;
         Camera* active_camera = nullptr;
 
@@ -88,12 +112,25 @@ public:
             camera_transform = &scene.get_component<Transform>(entity);
 
             Matrix4 view = camera_transform->get_matrix().inversed();
-            Matrix4 projection = Matrix4::perspective(
-                to_radians(active_camera->fov),
-                (float)camera_data.viewport.width / (float)camera_data.viewport.height,
-                active_camera->near_plane,
-                active_camera->far_plane
-            );
+            
+            Matrix4 projection;
+            if (active_camera->type == CameraType::Orthographic) {
+                float half_height = active_camera->orthographic_size;
+                float half_width = half_height * viewport.aspect_ratio();
+                projection = Matrix4::orthographic(
+                    -half_width, half_width,
+                    -half_height, half_height,
+                    active_camera->near_plane,
+                    active_camera->far_plane
+                );
+            } else {
+                projection = Matrix4::perspective(
+                    to_radians(active_camera->fov),
+                    viewport.aspect_ratio(),
+                    active_camera->near_plane,
+                    active_camera->far_plane
+                );
+            }
 
             camera_data.matrix = projection * view;
             break;
@@ -130,12 +167,32 @@ public:
                 mesh_renderer.materials
             });
         }
-
         last_instance_count = rd.mesh_instances.size();
+
+        rd.sprite_instances.clear();
+        rd.sprite_instances.reserve(last_sprite_count);
+
+        for (auto entity : scene.get_registry().view<Transform, SpriteRenderer>()) {
+            Transform& transform = scene.get_component<Transform>(entity);
+            SpriteRenderer& sprite_renderer = scene.get_component<SpriteRenderer>(entity);
+
+            if (!sprite_renderer.sprite) continue;
+
+            rd.sprite_instances.push_back(SpriteInstance{
+                sprite_renderer.sprite,
+                transform.get_matrix(),
+                sprite_renderer.color,
+                sprite_renderer.flip_x,
+                sprite_renderer.flip_y,
+                sprite_renderer.layer
+            });
+        }
+        last_sprite_count = rd.sprite_instances.size();
     };
 
 private:
     size_t last_instance_count = 0;
+    size_t last_sprite_count = 0;
 };
 
 #if __REFLECT_GENERATED__

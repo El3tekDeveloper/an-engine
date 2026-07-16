@@ -4,12 +4,13 @@
 #include "core/io/path.h"
 #include "core/memory/bump_allocator.h"
 #include "render/renderer.h"
+#include "resources/gpu_types.h"
 #include "resources/material.h"
 #include <string>
 #include <glad/glad.h>
 
-static const std::string shaders_folder = "render/shaders/";
-static const std::string shared_folder = "resources/";
+static const std::string shaders_folder = "engine://render/shaders/";
+static const std::string shared_folder = "engine://resources/";
 
 void inline APIENTRY gl_debug_callback([[maybe_unused]] GLenum source, [[maybe_unused]] GLenum type, [[maybe_unused]] GLuint id, GLenum severity,
                                 [[maybe_unused]] GLsizei length, const GLchar* message, [[maybe_unused]] const void* user) {
@@ -17,7 +18,7 @@ void inline APIENTRY gl_debug_callback([[maybe_unused]] GLenum source, [[maybe_u
     if( severity == GL_DEBUG_SEVERITY_LOW || 
         severity == GL_DEBUG_SEVERITY_MEDIUM ||
         severity == GL_DEBUG_SEVERITY_HIGH) {
-        LOG_ERROR("OpenGL Error: {}", message);
+        LOG_ERROR("OpenGL: {}", message);
     }
     else {
         LOG_INFO("{}", (const char*)message);
@@ -27,21 +28,19 @@ void inline APIENTRY gl_debug_callback([[maybe_unused]] GLenum source, [[maybe_u
 #endif
 }
 
-static inline GLuint create_shader(ShaderType type, const std::string& shader_file, const std::vector<std::string>& headers, BumpAllocator& allocator) {
+static inline GLuint create_shader(ShaderType type, const std::string& shader_file, const std::vector<GpuHandle>& headers, BumpAllocator& allocator) {
     GLenum shader_type = type == ShaderType::Vertex ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER;
 
-    const std::string gpu_types = IO::read_file(IO::join(shared_folder, "gpu_types.h"), allocator);
     const std::string shader_src = IO::read_file(IO::join(shaders_folder, shader_file), allocator);
     
-    std::string shader_header_src;
-    for (const std::string& header : headers) {
-        shader_header_src += IO::read_file(IO::join(shared_folder, header), allocator) + "\n";
+    std::string shader_header;
+    for (auto& header : headers) {
+        shader_header += header.get_string();
     }
 
     const std::string src = 
         "#version 430 core     \n"
-        + gpu_types         + "\n"
-        + shader_header_src + "\n"
+        + shader_header + "\n"
         + shader_src;
     const char* src_ptr = src.c_str();
     
@@ -62,7 +61,7 @@ static inline GLuint create_shader(ShaderType type, const std::string& shader_fi
     return shader_id;
 }
 
-static inline GLuint create_program(const std::string& vert_file, const std::string& frag_file, const std::vector<std::string>& headers, BumpAllocator& allocator) {
+static inline GLuint create_program(const std::string& vert_file, const std::string& frag_file, const std::vector<GpuHandle>& headers, BumpAllocator& allocator) {
     GLuint vert = create_shader(ShaderType::Vertex, vert_file, headers, allocator);
     GLuint frag = create_shader(ShaderType::Fragment, frag_file, headers, allocator);
     if (!vert || !frag) {

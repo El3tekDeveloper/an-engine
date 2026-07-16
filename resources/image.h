@@ -1,4 +1,5 @@
 #pragma once
+#include "core/io/path.h"
 #include "stb_image.h"
 #include <vector>
 #include <string>
@@ -11,7 +12,7 @@ public:
     bool load_from_file(const std::string& path, bool flip = true) {
         int channels;
         stbi_set_flip_vertically_on_load(flip);
-        unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 4);
+        unsigned char* data = stbi_load(IO::resolve_path(path).c_str(), &width, &height, &channels, 4);
         if (!data) return false;
 
         pixels.assign(data, data + width * height * 4);

@@ -31,6 +31,15 @@ const bool resources_registered = [] {
         },
         TypeKind::Class
     );
+    
+    register_type<Sprite>(
+        "Sprite",
+        [](const void* p) -> std::string {
+            const auto& s = *static_cast<const Sprite*>(p);
+            return std::format("Sprite({})", s.get_uuid());
+        },
+        TypeKind::Class
+    );
 
     register_type<ViewPort>(
         "ViewPort",

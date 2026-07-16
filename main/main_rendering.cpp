@@ -67,7 +67,7 @@ int main() {
     mat->albedo_factor = Color(0.5, 0.5, 0.5, 1);
 
     Material* mat1 = ResourceManager.create_material();
-    mat1->set_albedo(ResourceManager.get_texture("assets/textures/car.png"));
+    mat1->set_albedo(ResourceManager.get_texture("assets://textures/car.png"));
     mat1->albedo_texture->set_filter(TextureFilter::Nearest);
     
     TestModel car;
@@ -77,11 +77,11 @@ int main() {
         cgltf_options options = {};
         cgltf_data* data = nullptr;
 
-        if (cgltf_parse_file(&options, "assets/models/Car.glb", &data) != cgltf_result_success) {
+        if (cgltf_parse_file(&options, "assets://models/Car.glb", &data) != cgltf_result_success) {
             printf("Failed to parse file\n");
             return -1;
         }
-        if (cgltf_load_buffers(&options, data, "assets/models/Car.glb") != cgltf_result_success) {
+        if (cgltf_load_buffers(&options, data, "assets://models/Car.glb") != cgltf_result_success) {
             printf("Failed to load buffers\n");
             cgltf_free(data);
             return -1;

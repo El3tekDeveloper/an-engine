@@ -11,7 +11,7 @@
 
 #define export        clang::annotate("reflect-export")
 #define range(mn, mx) clang::annotate("reflect-range;" #mn "," #mx)
-#define button        clang::annotate("reflect-button")
+// #define button        clang::annotate("reflect-button")
 
 enum class TypeKind {
     Primitive,
@@ -49,6 +49,7 @@ public:
 private:
     std::string m_name;
     size_t m_size = -1;
+
     ToStringFn to_string = nullptr;
     TypeKind m_kind = TypeKind::Primitive;
     Type* m_element_type = nullptr;

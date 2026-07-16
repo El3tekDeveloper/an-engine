@@ -13,9 +13,9 @@ struct SubMesh {
 
 struct Mesh : Resource {
 public:
-    static const Mesh Cube;
-    static const Mesh Sphere;
-    static const Mesh Capsule;
+    static Mesh Cube;
+    static Mesh Sphere;
+    static Mesh Capsule;
 
     explicit Mesh(std::string name, std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<SubMesh> submeshes = {})
         : name(name), vertices(vertices), indices(indices), submeshes(submeshes) {
@@ -51,7 +51,7 @@ struct MeshInstance {
     std::vector<Material*> materials = {};
 };
 
-inline const Mesh Mesh::Cube = Mesh(
+inline Mesh Mesh::Cube = Mesh(
     "Cube",
     {
         // Front  (normal  0, 0, 1)
@@ -95,7 +95,7 @@ inline const Mesh Mesh::Cube = Mesh(
     }
 );
 
-inline const Mesh Mesh::Sphere = []() {
+inline Mesh Mesh::Sphere = []() {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
@@ -119,7 +119,8 @@ inline const Mesh Mesh::Sphere = []() {
             Vector3 normal = Vector3(x, y, z).normalized();
             Vector2 uv = { u, v };
 
-            vertices.push_back({ pos, normal, uv });
+            Vertex v = Vertex(pos, normal, uv);
+            vertices.push_back(v);
         }
     }
 
@@ -142,7 +143,7 @@ inline const Mesh Mesh::Sphere = []() {
     return Mesh("Sphere", vertices, indices);
 }();
 
-inline const Mesh Mesh::Capsule = []() {
+inline Mesh Mesh::Capsule = []() {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
@@ -181,7 +182,8 @@ inline const Mesh Mesh::Capsule = []() {
             Vector3 normal = Vector3(sx, sy, sz).normalized();
             Vector2 uv     = { u, v };
 
-            vertices.push_back({ pos, normal, uv });
+            Vertex v = Vertex(pos, normal, uv);
+            vertices.push_back(v);
         }
     }
 

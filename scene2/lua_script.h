@@ -5,7 +5,7 @@
 
 class LuaScript : public Script {
 public:
-    explicit LuaScript(std::string path) : script_path(std::move(path)) {}
+    explicit LuaScript(std::string path) : script_path(IO::resolve_path(path)) {}
 
     std::string script_path;
 

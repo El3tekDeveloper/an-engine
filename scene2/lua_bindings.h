@@ -1,11 +1,15 @@
 #pragma once
+#include "core/input/input.h"
+#include "core/input/input_listener.h"
 #include "core/math/color.h"
 #include "core/math/vector3.h"
 #include "core/math/quaternion.h"
+#include "core/os/keyboard.h"
 #include "core/os/time.h"
 #include "resources/material.h"
 #include "resources/mesh.h"
 #include "resources/resource_manager.h"
+#include "resources/sprite.h"
 #include "sol/raii.hpp"
 #include "sol/table.hpp"
 #include "tools/reflector/type_registry.h"
@@ -13,6 +17,7 @@
 #include "scene2/game_object.h"
 #include "component.h"
 #include <sol/sol.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 struct ArgBox {
     float f{}; int i{}; bool b{}; std::string s{};
@@ -56,6 +61,8 @@ static sol::object field_get(sol::state_view lua, void* base, const Field& f) {
     if (tn == "Vector3") return sol::make_object(lua, *static_cast<Vector3*>(p));
     if (tn == "Quaternion") return sol::make_object(lua, *static_cast<Quaternion*>(p));
     if (tn == "Mesh") return sol::make_object(lua, *static_cast<Mesh*>(p));
+    if (tn == "Mesh *") return sol::make_object(lua, *static_cast<Mesh* const*>(p));
+    if (tn == "Sprite *") return sol::make_object(lua, *static_cast<Sprite* const*>(p));
     if (tn == "Material") return sol::make_object(lua, *static_cast<Material*>(p));
     return sol::make_object(lua, sol::nil);
 }
@@ -71,10 +78,22 @@ static void field_set(void* base, const Field& f, sol::object v) {
     else if (tn == "Vector3") *static_cast<Vector3*>(p) = v.as<Vector3>();
     else if (tn == "Quaternion") *static_cast<Quaternion*>(p) = v.as<Quaternion>();
     else if (tn == "Mesh") *static_cast<Mesh*>(p) = v.as<Mesh>();
+    else if (tn == "Mesh *") *static_cast<Mesh**>(p) = v.as<Mesh*>();
+    else if (tn == "Sprite *") *static_cast<Sprite**>(p) = v.as<Sprite*>();
     else if (tn == "Material") *static_cast<Material*>(p) = v.as<Material>();
 }
 
-static inline void register_lua_bindings(sol::state& lua) {
+template <typename T>
+void register_enum_automatically(sol::state& lua, const std::string& lua_name) {
+    sol::table enum_table = lua.create_table();
+    constexpr auto entries = magic_enum::enum_entries<T>();
+    for (const auto& [value, name] : entries) {
+        enum_table[std::string(name)] = value;
+    }
+    lua[lua_name] = enum_table;
+}
+
+static inline void register_lua_bindings(sol::state& lua, Scene& scene) {
     sol::table time_table = lua.create_table();
     time_table.set_function("delta_time", []() {
         return Time.delta_time();
@@ -110,6 +129,44 @@ static inline void register_lua_bindings(sol::state& lua) {
     });
     lua["ResourceManager"] = resource_manager_table;
 
+    register_enum_automatically<Keyboard::Key>(lua, "Key");
+    register_enum_automatically<Mouse::MouseButton>(lua, "MouseButton");
+    sol::table input_table = lua.create_table();
+    input_table.set_function("is_key_pressed", [](Keyboard::Key key) {
+        return Input.is_key_pressed(key);
+    }); 
+    input_table.set_function("is_key_just_pressed", [](Keyboard::Key key) {
+        return Input.is_key_just_pressed(key);
+    });
+    input_table.set_function("is_key_just_released", [](Keyboard::Key key) {
+        return Input.is_key_just_released(key);
+    });
+    input_table.set_function("is_mouse_button_pressed", [](Mouse::MouseButton btn) {
+        return Input.is_mouse_button_pressed(btn);
+    }); 
+    input_table.set_function("is_mouse_button_just_pressed", [](Mouse::MouseButton btn) {
+        return Input.is_mouse_button_just_pressed(btn);
+    });
+    input_table.set_function("is_mouse_button_just_released", [](Mouse::MouseButton btn) {
+        return Input.is_mouse_button_just_released(btn);
+    });
+    input_table.set_function("get_mouse_position", []() {
+        return Input.get_mouse_position();
+    });
+    input_table.set_function("get_mouse_delta", []() {
+        return Input.get_mouse_delta();
+    });
+    lua["Input"] = input_table;
+
+    sol::table scene_table = lua.create_table();
+    scene_table.set_function("create_game_object", [&scene]() -> GameObject {
+        return scene.create_game_object();
+    });
+    scene_table.set_function("destroy_game_object", [&scene](GameObject game_object) {
+        return scene.destroy_game_object(game_object);
+    });
+    lua["Scene"] = scene_table;
+
     lua.new_usertype<Vector3>("Vector3",
         sol::constructors<Vector3(), Vector3(float, float, float)>(),
         "x", &Vector3::x,
@@ -122,21 +179,34 @@ static inline void register_lua_bindings(sol::state& lua) {
             return std::format("({}, {}, {})", v.x, v.y, v.z);
         }
     );
-
-    lua.new_usertype<Quaternion::EulerAngles>("Euler",
-        "x", &Quaternion::EulerAngles::x,
-        "y", &Quaternion::EulerAngles::y,
-        "z", &Quaternion::EulerAngles::z,
-        sol::meta_function::to_string, [](const Quaternion::EulerAngles& v) {
-            return std::format(
-                "({}, {}, {})",
-                static_cast<float>(v.x),
-                static_cast<float>(v.y),
-                static_cast<float>(v.z)
-            );
-        }
-    );
     
+    lua.new_usertype<Quaternion::EulerAngles>("Euler",
+
+        "x", sol::property(
+            [](Quaternion::EulerAngles& e) {
+                return static_cast<float>(e.x);
+            },
+            [](Quaternion::EulerAngles& e, float v) {
+                e.x = v;
+            }),
+
+        "y", sol::property(
+            [](Quaternion::EulerAngles& e) {
+                return static_cast<float>(e.y);
+            },
+            [](Quaternion::EulerAngles& e, float v) {
+                e.y = v;
+            }),
+
+        "z", sol::property(
+            [](Quaternion::EulerAngles& e) {
+                return static_cast<float>(e.z);
+            },
+            [](Quaternion::EulerAngles& e, float v) {
+                e.z = v;
+            })
+    );
+
     lua.new_usertype<Quaternion>("Quaternion",
         sol::constructors<Quaternion()>(),
         "x", &Quaternion::_x,
@@ -185,6 +255,27 @@ static inline void register_lua_bindings(sol::state& lua) {
 
         "gpu_size", &Material::gpu_size
     );
+    
+    lua.new_usertype<SpriteRect>("SpriteRect",
+        sol::constructors<SpriteRect(), SpriteRect(int, int, int, int)>(),
+
+        "x", &SpriteRect::x,
+        "y", &SpriteRect::y,
+        "width", &SpriteRect::width,
+        "height", &SpriteRect::height
+    );
+
+    lua.new_usertype<Sprite>("Sprite",
+        sol::constructors<Sprite()>(),
+
+        "load", &Sprite::load,
+        "is_valid", &Sprite::is_valid,
+        "get_size", &Sprite::get_size,
+        "get_uv_rect", &Sprite::get_uv_rect,
+        "texture", &Sprite::texture,
+        "rect", &Sprite::rect,
+        "pivot", &Sprite::pivot
+    );
 
     lua.new_usertype<Transform>("Transform",
         "position", &Transform::position,
@@ -192,9 +283,14 @@ static inline void register_lua_bindings(sol::state& lua) {
         "scale", &Transform::scale
     );
 
+    lua.new_usertype<Mesh>("Mesh",
+        "name", &Mesh::name
+    );
+
     sol::table mesh_table = lua.create_table();
-    mesh_table["Cube"]   = Mesh::Cube;
-    mesh_table["Sphere"] = Mesh::Sphere;
+    mesh_table["Cube"] = &Mesh::Cube;
+    mesh_table["Sphere"] = &Mesh::Sphere;
+    mesh_table["Capsule"] = &Mesh::Capsule;
     lua["Mesh"] = mesh_table;
 
     lua.new_usertype<TypeClass>("TypeClass",
@@ -242,6 +338,7 @@ static inline void register_lua_bindings(sol::state& lua) {
     );
 
     lua.new_usertype<GameObject>("GameObject",
+        sol::constructors<GameObject()>(),
         "transform", sol::property([](GameObject& go) -> Transform& { return go.transform(); }),
 
         "add_component", [](GameObject& go, TypeClass* tc) -> Component* {

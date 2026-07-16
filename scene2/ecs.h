@@ -2,7 +2,7 @@
 #include <bitset>
 #include <cstddef>
 #include <cstdint>
-#include <new>
+#include <memory_resource>
 
 namespace ecs {
     typedef uint64_t Entity;
@@ -39,17 +39,16 @@ namespace ecs {
         constexpr Entity INVALID = make(UINT32_MAX, 0);
     }
     
-    // [IMPROVE] Use: 'std::pmr::monotonic_buffer_resource'
     struct ComponentPool {
-        ComponentPool(size_t element_size) {
-            m_element_size = element_size;
-            m_data = static_cast<std::byte*>(::operator new(element_size * MAX_ENTITIES));
-        }
+        ComponentPool(size_t element_size)
+            : m_element_size(element_size),
+              m_resource(element_size * MAX_ENTITIES),
+              m_data(static_cast<std::byte*>(
+                  m_resource.allocate(element_size * MAX_ENTITIES, alignof(std::max_align_t))
+              ))
+        {}
 
-        ~ComponentPool() {
-            ::operator delete(m_data);
-            m_data = nullptr;
-        }
+        ~ComponentPool() = default;
 
         ComponentPool(const ComponentPool&) = delete;
         ComponentPool& operator=(const ComponentPool&) = delete;
@@ -58,8 +57,9 @@ namespace ecs {
             return m_data + index * m_element_size;
         }
 
-        std::byte* m_data = nullptr;
         size_t m_element_size;
+        std::pmr::monotonic_buffer_resource m_resource;
+        std::byte* m_data = nullptr;
     };
     
     inline ComponentType get_unique_id() {

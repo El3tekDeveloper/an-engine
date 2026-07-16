@@ -235,7 +235,7 @@ void InputSystem::poll_event(void* p_event) {
         }
         case SDL_MOUSEBUTTONUP: {
             MouseButton button = sdl_to_mouse_button(event->button.button);
-            mouse_states[button] = true;
+            mouse_states[button] = false;
 
             for (auto& [listener, _] : listener_map) {
                 listener->on_mouse_button_up(button);

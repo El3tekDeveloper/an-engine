@@ -22,9 +22,9 @@ void Scene::update() {
     }
 }
 
-void Scene::draw(RenderData& rd) {
+void Scene::draw(ViewPort& viewport, RenderData& rd) {
     for (auto& system : systems) {
-        system->draw(*this, rd);
+        system->draw(*this, viewport, rd);
     }
 }
 

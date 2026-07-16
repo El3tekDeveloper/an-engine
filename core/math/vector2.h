@@ -1,7 +1,7 @@
 #pragma once
 #include <cmath>
 
-struct [[nodiscard]] Vector2 {
+struct [[nodiscard]] alignas(8) Vector2 {
     enum Axis {
         X = 0,
         Y = 1

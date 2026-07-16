@@ -43,7 +43,7 @@
   - rotation = 0,0,0.8027591,0.59630346
   - scale = 1,1.5,1
 - [component type_name="LuaBehaviour"]
-  - script_path = assets/scripts/player.lua
+  - script_path = assets://scripts/player.lua
 - [component type_name="MeshRenderer"]
   - mesh = Mesh(Cube)
   - materials = [Material(1214826112)]

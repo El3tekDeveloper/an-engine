@@ -37,4 +37,11 @@ function update()
     time = time + Time.delta_time()
     local wave = math.sin(time * frequency) * amplitude
     transform.position.y = start_y + wave
+
+    if Input.is_key_pressed(Key.X) then
+        transform.position.x = transform.position.x + 10 * Time.delta_time()
+    end
+    if Input.is_key_pressed(Key.Z) then
+        transform.position.x = transform.position.x - 10 * Time.delta_time()
+    end
 end

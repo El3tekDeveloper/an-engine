@@ -1,5 +1,4 @@
 #pragma once
-
 #include "core/utils/uuid.h"
 
 class Resource {

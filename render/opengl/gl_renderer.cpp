@@ -1,19 +1,20 @@
 #include "render/renderer.h"
 #include "gl_utils.h"
 #include "core/math/matrix4.h"
+#include "core/math/vector2.h"
+#include "resources/material.h"
 #include "resources/opengl/gl_texture.h"
 #include "resources/resource_manager.h"
 #include "resources/mesh.h"
 #include "resources/vertex.h"
 #include <glad/glad.h>
+#include <algorithm>
 #include <string>
 #include <stb_image.h>
 
-static constexpr GLsizei FBO_MSAA_SAMPLES = 4;
-
 struct GLContext {
     GLuint vao_id;
-    
+
     GLuint mesh_vbo_id;
     GLuint mesh_ibo_id;
     GLuint mesh_program_id;
@@ -24,92 +25,17 @@ struct GLContext {
     GLint model_loc;
     GLint index_offset_loc;
 
-    GLuint fbo_id = 0;
-    GLuint fbo_color_rbo_id = 0;
-    GLuint fbo_depth_rbo_id = 0;
-
-    GLuint resolve_fbo_id = 0;
-    GLuint resolve_color_tex_id = 0;
-
-    int fbo_width = 0;
-    int fbo_height = 0;
+    GLuint sprite_program_id;
+    GLint sprite_camera_loc;
+    GLint sprite_model_loc;
+    GLint sprite_uv_rect_loc;
+    GLint sprite_transform_loc;
+    GLint sprite_tint_loc;
 };
 
 static GLContext context;
 
-static bool create_framebuffers(int width, int height) {
-    if (width <= 0 || height <= 0)
-        return false;
-
-    if (width == context.fbo_width && height == context.fbo_height && context.fbo_id != 0)
-        return true;
-
-    if (context.fbo_id) {
-        glDeleteFramebuffers(1, &context.fbo_id);
-        context.fbo_id = 0;
-    }
-    if (context.fbo_color_rbo_id) {
-        glDeleteRenderbuffers(1, &context.fbo_color_rbo_id);
-        context.fbo_color_rbo_id = 0;
-    }
-    if (context.fbo_depth_rbo_id) {
-        glDeleteRenderbuffers(1, &context.fbo_depth_rbo_id);
-        context.fbo_depth_rbo_id = 0;
-    }
-    if (context.resolve_fbo_id) {
-        glDeleteFramebuffers(1, &context.resolve_fbo_id);
-        context.resolve_fbo_id = 0;
-    }
-    if (context.resolve_color_tex_id) {
-        glDeleteTextures(1, &context.resolve_color_tex_id);
-        context.resolve_color_tex_id = 0;
-    }
-
-    glGenFramebuffers(1, &context.fbo_id);
-    glBindFramebuffer(GL_FRAMEBUFFER, context.fbo_id);
-
-    glGenRenderbuffers(1, &context.fbo_color_rbo_id);
-    glBindRenderbuffer(GL_RENDERBUFFER, context.fbo_color_rbo_id);
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, FBO_MSAA_SAMPLES, GL_SRGB8_ALPHA8, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, context.fbo_color_rbo_id);
-
-    glGenRenderbuffers(1, &context.fbo_depth_rbo_id);
-    glBindRenderbuffer(GL_RENDERBUFFER, context.fbo_depth_rbo_id);
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, FBO_MSAA_SAMPLES, GL_DEPTH24_STENCIL8, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, context.fbo_depth_rbo_id);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        return false;
-    }
-
-    glGenFramebuffers(1, &context.resolve_fbo_id);
-    glBindFramebuffer(GL_FRAMEBUFFER, context.resolve_fbo_id);
-
-    glGenTextures(1, &context.resolve_color_tex_id);
-    glBindTexture(GL_TEXTURE_2D, context.resolve_color_tex_id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, context.resolve_color_tex_id, 0);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        return false;
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    context.fbo_width = width;
-    context.fbo_height = height;
-    return true;
-}
-
-bool Renderer::init(Window* _window, BumpAllocator* transient_storage) {
-    window = _window;
-
+bool Renderer::init(BumpAllocator* transient_storage) {
     ResourceManager.get_registry<Texture>().set_factory(
         []{ return std::make_unique<GLTexture>(); }
     );
@@ -121,7 +47,7 @@ bool Renderer::init(Window* _window, BumpAllocator* transient_storage) {
     glEnable(GL_DEBUG_OUTPUT);
 #endif
 
-    context.mesh_program_id = create_program("mesh.vert", "mesh.frag", {"vertex.h", "material.h"}, *transient_storage);
+    context.mesh_program_id = create_program("mesh.vert", "mesh.frag", {Vertex::get_gpu_handle(), Material::get_gpu_handle()}, *transient_storage);
     if (!context.mesh_program_id) return false;
     glUseProgram(context.mesh_program_id);
 
@@ -145,6 +71,17 @@ bool Renderer::init(Window* _window, BumpAllocator* transient_storage) {
     context.model_loc = glGetUniformLocation(context.mesh_program_id, "model");
     context.index_offset_loc = glGetUniformLocation(context.mesh_program_id, "index_offset");
 
+    context.sprite_program_id = create_program("sprite.vert", "sprite.frag", {}, *transient_storage);
+    if (!context.sprite_program_id) return false;
+    glUseProgram(context.sprite_program_id);
+    glUniform1i(glGetUniformLocation(context.sprite_program_id, "sprite_texture"), 0);
+
+    context.sprite_camera_loc = glGetUniformLocation(context.sprite_program_id, "camera");
+    context.sprite_model_loc = glGetUniformLocation(context.sprite_program_id, "model");
+    context.sprite_uv_rect_loc = glGetUniformLocation(context.sprite_program_id, "uv_rect");
+    context.sprite_transform_loc = glGetUniformLocation(context.sprite_program_id, "sprite_transform");
+    context.sprite_tint_loc = glGetUniformLocation(context.sprite_program_id, "tint_color");
+
     glGenVertexArrays(1, &context.vao_id);
     glBindVertexArray(context.vao_id);
 
@@ -154,23 +91,18 @@ bool Renderer::init(Window* _window, BumpAllocator* transient_storage) {
     glEnable(GL_MULTISAMPLE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    if (!create_framebuffers(window->width, window->height)) {
-        return false;
-    }
-
+    initialized = true;
     return true;
 }
 
-void Renderer::render(RenderData& render_data) {
-    if (!is_valid())
+void Renderer::render(ViewPort& viewport, RenderData& render_data) {
+    if (!initialized || !viewport.target)
         return;
 
-    viewport_ptr = &render_data.camera->viewport;
-    create_framebuffers(viewport_ptr->width, viewport_ptr->height);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, context.fbo_id);
-    glViewport(viewport_ptr->position.x, viewport_ptr->position.y,
-            viewport_ptr->width, viewport_ptr->height);
+    RenderTarget* target = viewport.target;
+    target->resize(viewport.width, viewport.height);
+    target->bind();
+    glViewport(0, 0, viewport.width, viewport.height);
 
     glClearColor(
         render_data.clear_color.r,
@@ -233,56 +165,56 @@ void Renderer::render(RenderData& render_data) {
             glUniform1ui(context.index_offset_loc, sub.index_offset);
             glDrawArrays(GL_TRIANGLES, 0, sub.index_count);
         }
-
     }
 
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, context.fbo_id);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, context.resolve_fbo_id);
-    glBlitFramebuffer(
-        0, 0, viewport_ptr->width, viewport_ptr->height,
-        0, 0, viewport_ptr->width, viewport_ptr->height,
-        GL_COLOR_BUFFER_BIT, GL_NEAREST
-    );
+    if (!render_data.sprite_instances.empty()) {
+        std::sort(render_data.sprite_instances.begin(), render_data.sprite_instances.end(),
+            [](const SpriteInstance& a, const SpriteInstance& b) {
+                return a.layer < b.layer;
+            });
 
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, context.resolve_fbo_id);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(
-        0, 0, viewport_ptr->width, viewport_ptr->height,
-        viewport_ptr->position.x, viewport_ptr->position.y,
-        viewport_ptr->position.x + viewport_ptr->width,
-        viewport_ptr->position.y + viewport_ptr->height,
-        GL_COLOR_BUFFER_BIT, GL_NEAREST
-    );
+        glUseProgram(context.sprite_program_id);
+        glUniformMatrix4fv(context.sprite_camera_loc, 1, GL_TRUE, render_data.camera->matrix.data());
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        for (const SpriteInstance& sprite_instance : render_data.sprite_instances) {
+            const Sprite* sprite = sprite_instance.sprite;
+            if (!sprite || !sprite->is_valid()) continue;
+
+            Vector2 uv_min, uv_max;
+            sprite->get_uv_rect(uv_min, uv_max);
+
+            Vector2 size = sprite->get_size();
+            Vector2 offset(-sprite->pivot.x * size.x, -sprite->pivot.y * size.y);
+
+            if (sprite_instance.flip_x) { size.x = -size.x; offset.x = -offset.x; }
+            if (sprite_instance.flip_y) { size.y = -size.y; offset.y = -offset.y; }
+
+            glUniformMatrix4fv(context.sprite_model_loc, 1, GL_TRUE, sprite_instance.model.data());
+            glUniform4f(context.sprite_uv_rect_loc, uv_min.x, uv_min.y, uv_max.x, uv_max.y);
+            glUniform4f(context.sprite_transform_loc, offset.x, offset.y, size.x, size.y);
+            glUniform4f(context.sprite_tint_loc,
+                sprite_instance.color.r, sprite_instance.color.g,
+                sprite_instance.color.b, sprite_instance.color.a);
+
+            sprite->texture->bind(0);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
+    }
+
+    target->resolve();
 
     render_data.mesh_instances.clear();
 }
 
-void Renderer::resize(int width, int height) {
-    viewport_ptr->resize(width, height);
-    glViewport(0, 0, width, height);
-    create_framebuffers(width, height);
-}
-
-uint Renderer::get_output_texture() const {
-    return context.resolve_color_tex_id;
-}
-
 void Renderer::destroy() {
-    if (!window) return;
+    if (!initialized) return;
 
     glDeleteBuffers(1, &context.material_ubo_id);
     glDeleteBuffers(1, &context.mesh_vbo_id);
     glDeleteBuffers(1, &context.mesh_ibo_id);
     glDeleteVertexArrays(1, &context.vao_id);
     glDeleteProgram(context.mesh_program_id);
+    glDeleteProgram(context.sprite_program_id);
 
-    if (context.fbo_id) glDeleteFramebuffers(1, &context.fbo_id);
-    if (context.resolve_fbo_id) glDeleteFramebuffers(1, &context.resolve_fbo_id);
-    if (context.fbo_color_rbo_id) glDeleteRenderbuffers(1, &context.fbo_color_rbo_id);
-    if (context.fbo_depth_rbo_id) glDeleteRenderbuffers(1, &context.fbo_depth_rbo_id);
-    if (context.resolve_color_tex_id) glDeleteTextures(1, &context.resolve_color_tex_id);
-
-    window = nullptr;
+    initialized = false;
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "core/debug/logger.h"
+#include "core/io/path.h"
 #include "core/utils/uuid.h"
 #include "resources/recource.h"
 #include <memory>
@@ -135,7 +136,7 @@ public:
     template <typename T>
     T* load(const std::string& path) {
         ResourceRegistry<T>& registry = get_registry<T>();
-        ResourceHandle handle = make_uuid(path);
+        ResourceHandle handle = make_uuid(IO::resolve_path(path));
 
         if (T* existing = registry.get(handle)) {
             return existing;

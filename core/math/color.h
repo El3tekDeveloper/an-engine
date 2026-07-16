@@ -2,7 +2,7 @@
 #include <cmath>
 #include <stdexcept>
 
-struct [[nodiscard]] Color {
+struct [[nodiscard]] alignas(16) Color {
     static const Color White;
     static const Color Black;
     static const Color Red;

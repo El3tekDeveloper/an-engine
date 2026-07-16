@@ -20,7 +20,7 @@ public:
     
     void initialize();
     void update();
-    void draw(RenderData& render_data);
+    void draw(ViewPort& viewport, RenderData& render_data);
     
     void add_system(std::unique_ptr<System> system);
     template<typename T>

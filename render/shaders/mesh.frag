@@ -1,3 +1,15 @@
+#define MATERIAL_SLOT_ALBEDO     0
+#define MATERIAL_SLOT_NORMAL     1
+#define MATERIAL_SLOT_METALROUGH 2
+#define MATERIAL_SLOT_EMISSIVE   3
+
+#define MATERIAL_HAS_ALBEDO_TEX     (1 << 0)
+#define MATERIAL_HAS_NORMAL_TEX     (1 << 1)
+#define MATERIAL_HAS_METALROUGH_TEX (1 << 2)
+#define MATERIAL_HAS_EMISSIVE_TEX   (1 << 3)
+#define MATERIAL_DOUBLE_SIDED       (1 << 4)
+#define MATERIAL_UNLIT              (1 << 5)
+
 layout(std140, binding = 2) uniform material_ubo {
     Material material;
 };
@@ -58,6 +70,8 @@ void main() {
         emissive *= texture(texture_emissive, uv).rgb;
     }
 
-    vec4 base = vec4((ambient + diffuse), 1.0) * albedo * vertex_color;
-    frag_color = vec4(base.rgb + emissive, base.a);
+    vec3 color = (ambient + diffuse) * albedo.rgb * vertex_color.rgb;
+    color += emissive;
+
+    frag_color = vec4(color, albedo.a * vertex_color.a);
 }
