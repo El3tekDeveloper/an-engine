@@ -3,9 +3,12 @@
 #include "render_target.h"
 
 struct ViewPort {
-    int x = 0, y = 0;
+    ViewPort(int width = 1280, int height = 720, int x = 0, int y = 0, RenderTarget* target = nullptr)
+        : width(width), height(height), x(x), y(y), target(target) {}
+
     int width  = 1280;
     int height = 720;
+    int x = 0, y = 0;
 
     RenderTarget* target = nullptr;
 

@@ -31,7 +31,7 @@ void LuaScript::load_script(Scene& scene, Entity entity) {
     }
 
     sol::protected_function_result result = lua.safe_script_file(
-        script_path, sol::script_pass_on_error
+        IO::resolve_path(script_path), sol::script_pass_on_error
     );
 
     if (!result.valid()) {

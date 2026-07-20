@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
-#include <utility>
+#include "SDL_video.h"
+#include <variant>
 #include <vector>
 #include <functional>
 
@@ -23,7 +24,12 @@ struct WindowEventData {
     int height = 0;
 };
 
-using WindowHandle = void*;
+struct SDL2HandleData {
+    SDL_Window* window = nullptr;
+    SDL_GLContext context = nullptr;
+};
+
+using WindowHandle = std::variant<SDL2HandleData>;
 using ProcLoader = void* (*)(const char*);
 
 class WindowBackend {
@@ -74,9 +80,9 @@ public:
     void handle_resize(int width, int height);
     void handle_close_request();
 
+    WindowHandle handle;
 private:
     WindowDesc desc;
     WindowBackend* backend;
-    WindowHandle handle;
     bool closing = false;
 };

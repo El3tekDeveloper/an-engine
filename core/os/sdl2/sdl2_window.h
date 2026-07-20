@@ -1,5 +1,6 @@
 #pragma once
 #include "core/os/window.h"
+#include <vector>
 
 class SDL2WindowBackend : public WindowBackend {
 public:

@@ -3,6 +3,7 @@
 #include "core/memory/memory.h"
 #include "core/os/time.h"
 #include "core/os/application.h"
+#include "core/os/window.h"
 #include "render/renderer.h"
 #include "resources/resource_manager.h"
 #include "scene2/lua_script.h"
@@ -12,6 +13,7 @@
 #include "scene2/game_object.h"
 #include "scene2/script_system.h"
 #include <algorithm>
+#include <glad/glad.h>
 
 static RenderData render_data = {
     .clear_color = "#314D79"
@@ -67,17 +69,16 @@ int main() {
         LOG_ERROR("Window creation failed");
         return -1;
     }
-    window->on_close = [&app]() { app.quit(); };
 
-    SwapchainRenderTarget swap_chain(window);
     ViewPort viewport;
-    viewport.width  = window->get_width();
-    viewport.height = window->get_height();
-    viewport.target = &swap_chain;
+    viewport.width = 640;
+    viewport.height = 360;
 
-    window->on_resize = [&viewport](int w, int h) {
-        viewport.resize(w, h);
-    };
+    TextureRenderTarget main_target;
+    main_target.init(0, 0, viewport.width, viewport.height);
+    viewport.target = &main_target;
+
+    window->on_close = [&app]() { app.quit(); };
 
     Renderer renderer;
     if (!renderer.init(&transient_storage)) {
@@ -98,14 +99,14 @@ int main() {
     scene.assign_component<Camera>(camera);
 
     Transform& camera_transform = scene.get_component<Transform>(camera);
-    camera_transform.position = Vector3(0.0f, 5.0f*3, 20.0f*2);
+    camera_transform.position = Vector3(0.0f, 15.0f, 40.0f);
     camera_transform.rotation = Quaternion::Euler(0.0f, 0.0f, -20.0f);
 
     GameObject ground = scene.create_game_object();
     ground.add_script<LuaScript>("assets://scripts/ground.lua");
 
     Vector3 box_center = Vector3(0.0f, 3, -1.0f);
-    Vector3 box_extents = Vector3(11*2, 3, 11*2);
+    Vector3 box_extents = Vector3(22, 3, 22);
 
     float spawn_interval = 0.001f;
     float spawn_timer = 0.0f;
@@ -115,14 +116,16 @@ int main() {
     float mouse_sensitivity = 0.5f;
     Vector2 camera_angle = Vector2::Zero;
 
+    bool camera_control_enabled = false;
+
     while (app.is_running()) {
         app.poll_events();
-        
+
         Time.update();
         scene.update();
-
+        
         // Free Camera Movement
-        {
+        if (camera_control_enabled) {
             float mouse_x = Input.get_mouse_delta().x * mouse_sensitivity;
             float mouse_y = Input.get_mouse_delta().y * mouse_sensitivity;
 
@@ -170,11 +173,11 @@ int main() {
 
         scene.draw(viewport, render_data);
         renderer.render(viewport, render_data);
+
         window->swap_buffers();
     }
 
     ResourceManager.clear_all();
     renderer.destroy();
-    app.destroy_window(window);
     return 0;
 }

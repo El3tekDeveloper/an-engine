@@ -102,7 +102,7 @@ void Renderer::render(ViewPort& viewport, RenderData& render_data) {
     RenderTarget* target = viewport.target;
     target->resize(viewport.width, viewport.height);
     target->bind();
-    glViewport(0, 0, viewport.width, viewport.height);
+    glViewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
     glClearColor(
         render_data.clear_color.r,

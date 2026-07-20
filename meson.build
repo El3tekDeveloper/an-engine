@@ -16,7 +16,15 @@ src = []
 thirdparty_src = [
     'thirdparty/glad/src/glad.c',
     'thirdparty/stb/stb_impl.cpp',
-    'thirdparty/cgltf/cgltf_impl.cpp'
+    'thirdparty/cgltf/cgltf_impl.cpp',
+
+    'thirdparty/imgui/src/imgui.cpp',
+    'thirdparty/imgui/src/imgui_demo.cpp',
+    'thirdparty/imgui/src/imgui_draw.cpp',
+    'thirdparty/imgui/src/imgui_impl_opengl3.cpp',
+    'thirdparty/imgui/src/imgui_impl_sdl2.cpp',
+    'thirdparty/imgui/src/imgui_tables.cpp',
+    'thirdparty/imgui/src/imgui_widgets.cpp',
 ]
 
 includes = include_directories(
@@ -25,7 +33,8 @@ includes = include_directories(
     'thirdparty/stb',
     'thirdparty/cgltf',
     '/usr/include/luajit-2.1',
-    'thirdparty/sol2/include'
+    'thirdparty/sol2/include',
+    'thirdparty/imgui/include'
 )
 
 subdir('tools')

@@ -2,13 +2,9 @@
 #include "core/input/input.h"
 #include "core/debug/logger.h"
 #include "core/os/window.h"
+#include "imgui_impl_sdl2.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_video.h>
-
-struct SDL2HandleData {
-    SDL_Window* window = nullptr;
-    SDL_GLContext context = nullptr;
-};
 
 bool SDL2WindowBackend::startup() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -21,8 +17,8 @@ bool SDL2WindowBackend::startup() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+    // SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    // SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
     return true;
 }
@@ -44,7 +40,7 @@ WindowHandle SDL2WindowBackend::create_window(const WindowDesc& desc) {
 
     if (!sdl_window) {
         LOG_ERROR("Window Creation Failed: {}", SDL_GetError());
-        return nullptr;
+        return WindowHandle{};
     }
 
 #if ENGINE_DEBUG_ENABLED
@@ -55,33 +51,33 @@ WindowHandle SDL2WindowBackend::create_window(const WindowDesc& desc) {
     if (!gl_context) {
         LOG_ERROR("Context Creation Failed: {}", SDL_GetError());
         SDL_DestroyWindow(sdl_window);
-        return nullptr;
+        return WindowHandle{};
     }
 
-    auto* data = new SDL2HandleData{ sdl_window, gl_context };
-    return static_cast<WindowHandle>(data);
+    return SDL2HandleData{
+        .window = sdl_window,
+        .context = gl_context
+    };
 }
 
 void SDL2WindowBackend::destroy_window(WindowHandle handle) {
-    if (!handle) return;
-    auto* data = static_cast<SDL2HandleData*>(handle);
-
-    if (data->context) {
-        SDL_GL_DeleteContext(data->context);
+    auto& data = std::get<SDL2HandleData>(handle);
+    if (data.context) {
+        SDL_GL_DeleteContext(data.context);
     }
-    if (data->window) {
-        SDL_DestroyWindow(data->window);
+    if (data.window) {
+        SDL_DestroyWindow(data.window);
     }
 }
 
 void SDL2WindowBackend::make_current(WindowHandle handle) {
-    auto* data = static_cast<SDL2HandleData*>(handle);
-    SDL_GL_MakeCurrent(data->window, data->context);
+    auto& data = std::get<SDL2HandleData>(handle);
+    SDL_GL_MakeCurrent(data.window, data.context);
 }
 
 void SDL2WindowBackend::swap_buffers(WindowHandle handle) {
-    auto* data = static_cast<SDL2HandleData*>(handle);
-    SDL_GL_SwapWindow(data->window);
+    auto& data = std::get<SDL2HandleData>(handle);
+    SDL_GL_SwapWindow(data.window);
 }
 
 ProcLoader SDL2WindowBackend::proc_loader() const {
@@ -89,8 +85,8 @@ ProcLoader SDL2WindowBackend::proc_loader() const {
 }
 
 uint32_t SDL2WindowBackend::get_window_id(WindowHandle handle) const {
-    auto* data = static_cast<SDL2HandleData*>(handle);
-    return SDL_GetWindowID(data->window);
+    auto& data = std::get<SDL2HandleData>(handle);
+    return SDL_GetWindowID(data.window);
 }
 
 std::vector<WindowEventData> SDL2WindowBackend::poll_events() {

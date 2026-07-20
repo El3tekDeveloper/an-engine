@@ -26,10 +26,8 @@ void Window::swap_buffers() {
 void Window::shutdown() {
     closing = false;
  
-    if (handle) {
-        backend->destroy_window(handle);
-        handle = {};
-    }
+    backend->destroy_window(handle);
+    handle = {};
 }
  
 void Window::handle_resize(int width, int height) {
