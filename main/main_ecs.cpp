@@ -6,12 +6,12 @@
 #include "core/os/window.h"
 #include "render/renderer.h"
 #include "resources/resource_manager.h"
-#include "scene2/lua_script.h"
-#include "scene2/physics_system.h"
-#include "scene2/render_system.h"
+#include "resources/lua/lua_script.h"
+#include "scene2/systems/physics_system.h"
+#include "scene2/systems/render_system.h"
 #include "scene2/scene.h"
 #include "scene2/game_object.h"
-#include "scene2/script_system.h"
+#include "scene2/systems/script_system.h"
 #include <algorithm>
 #include <glad/glad.h>
 
@@ -116,7 +116,7 @@ int main() {
     float mouse_sensitivity = 0.5f;
     Vector2 camera_angle = Vector2::Zero;
 
-    bool camera_control_enabled = false;
+    bool camera_control_enabled = true;
 
     while (app.is_running()) {
         app.poll_events();

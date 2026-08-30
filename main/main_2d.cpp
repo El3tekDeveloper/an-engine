@@ -3,6 +3,7 @@
 #include <ctime>
 #include <vector>
 #include "core/debug/logger.h"
+#include "core/math/random.h"
 #include "core/math/vector3.h"
 #include "core/memory/memory.h"
 #include "core/os/time.h"
@@ -11,16 +12,16 @@
 #include "resources/resource_manager.h"
 #include "resources/sprite.h"
 #include "resources/texture.h"
-#include "scene2/component.h"
+#include "scene2/components/component.h"
 #include "scene2/ecs.h"
 #include "scene2/game_object.h"
-#include "scene2/lua_script.h"
-#include "scene2/physics_system.h"
+#include "resources/lua/lua_script.h"
+#include "scene2/systems/physics_system.h"
 #include "scene2/registry.h"
-#include "scene2/render_system.h"
+#include "scene2/systems/render_system.h"
 #include "scene2/scene.h"
-#include "scene2/script_system.h"
-#include "scene2/system.h"
+#include "scene2/systems/script_system.h"
+#include "scene2/systems/system.h"
 
 static RenderData render_data = {
     .clear_color = "#314D79"
@@ -31,17 +32,17 @@ static Scene scene;
 constexpr float PIXELS_PER_UNIT = 100.0f;
 
 constexpr float SCREEN_HALF_HEIGHT = 1.5f;
-constexpr float SCREEN_HALF_WIDTH  = 2.667f;
+constexpr float SCREEN_HALF_WIDTH = 2.667f;
 
-constexpr float PIPE_SCALE_X       = 20.0f;
-constexpr float PIPE_SCALE_Y       = 100.0f;
-constexpr float PIPE_SPEED         = 1.2f;
-constexpr float PIPE_SPAWN_EVERY   = 1.6f;
-constexpr float PIPE_GAP           = 1.0f;
-constexpr float PIPE_GAP_MIN_Y     = -0.6f;
-constexpr float PIPE_GAP_MAX_Y     =  0.6f;
+constexpr float PIPE_SCALE_X = 40.0f;
+constexpr float PIPE_SCALE_Y = 200.0f;
+constexpr float PIPE_SPEED = 1.2f;
+constexpr float PIPE_SPAWN_EVERY = 1.6f;
+constexpr float PIPE_GAP = 1.0f;
+constexpr float PIPE_GAP_MIN_Y = -0.6f;
+constexpr float PIPE_GAP_MAX_Y = 0.6f;
 
-constexpr float SPAWN_X   =  SCREEN_HALF_WIDTH + 0.3f;
+constexpr float SPAWN_X = SCREEN_HALF_WIDTH + 0.3f;
 constexpr float DESPAWN_X = -SCREEN_HALF_WIDTH - 0.6f;
 
 enum class GameState {
@@ -85,7 +86,7 @@ class PipeSystem : public System {
 public:
     void awake(Scene& scene) override {
         pipe_sprite.load("assets://sprites/Fish.png");
-        pipe_sprite.rect = SpriteRect{ .x = 32, .y = 32, .width = 2, .height = 2 };
+        pipe_sprite.rect = SpriteRect{ .x = 32, .y = 32, .width = 1, .height = 1 };
     }
 
     void update(Scene& scene) override {
@@ -152,7 +153,7 @@ private:
             }
         }
 
-        for (auto e : to_destroy) scene.destroy_entity(e);
+        for (auto e : to_destroy) scene.destroy(e);
 
         if (hit_something ||
             player_transform.position.y > SCREEN_HALF_HEIGHT ||
@@ -173,7 +174,7 @@ private:
         for (auto e : registry.view<Pipe>())
             pipes_to_destroy.push_back(e);
         for (auto e : pipes_to_destroy)
-            scene.destroy_entity(e);
+            scene.destroy(e);
 
         game_state.state = GameState::Playing;
     }
@@ -197,7 +198,7 @@ private:
     }
 
     void spawn_pipe_pair(Scene& scene) {
-        float gap_center_y = random_range(PIPE_GAP_MIN_Y, PIPE_GAP_MAX_Y);
+        float gap_center_y = Random::rangef(PIPE_GAP_MIN_Y, PIPE_GAP_MAX_Y);
         float pipe_world_height = (static_cast<float>(pipe_sprite.rect.height) / PIXELS_PER_UNIT) * PIPE_SCALE_Y;
 
         Vector3 bottom_pos(SPAWN_X, gap_center_y - PIPE_GAP * 0.5f - pipe_world_height * 0.5f, 0);
@@ -241,6 +242,24 @@ int main() {
         viewport.resize(w, h);
     };
 
+    Window* window2 = app.create_window(WindowDesc{
+        .title = "non (an-engine)",
+        .width = 1280,
+        .height = 720
+    });
+    if (!window2) {
+        LOG_ERROR("Window2 creation failed");
+        return -1;
+    }
+    window2->on_close = [&app]() { app.quit(); };
+
+    ViewPort viewport2;
+    viewport2.width = 640;
+    viewport2.height = 360;
+    TextureRenderTarget main_target;
+    main_target.init(0, 0, viewport2.width, viewport2.height);
+    viewport2.target = &main_target;
+
     Renderer renderer;
     if (!renderer.init(&transient_storage)) {
         LOG_ERROR("Renderer init failed");
@@ -253,7 +272,7 @@ int main() {
     scene.add_system(std::make_unique<RenderSystem>());
 
     scene.initialize();
-
+    
     Entity camera = scene.create_entity();
     scene.assign_component<Transform>(camera);
     scene.assign_component<Camera>(camera);
@@ -286,13 +305,20 @@ int main() {
         Time.update();
         scene.update();
         
+        window->make_current();
         scene.draw(viewport, render_data);
         renderer.render(viewport, render_data);
         window->swap_buffers();
+        
+        window2->make_current();
+        scene.draw(viewport2, render_data);
+        renderer.render(viewport2, render_data);
+        window2->swap_buffers();
     }
-
+    
+    scene.save("assets://scene.ascn");
     ResourceManager.clear_all();
     renderer.destroy();
-    app.destroy_window(window);
+    app.destroy_all_windows();
     return 0;
 }

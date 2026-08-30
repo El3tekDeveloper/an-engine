@@ -1,11 +1,11 @@
 #pragma once
 #include "core/math/color.h"
 #include "core/math/matrix4.h"
-#include "resources/recource.h"
+#include "resources/resource.h"
 #include "resources/texture.h"
 #include "resources/resource_manager.h"
 #include "core/math/vector2.h"
-#include "core/utils/uuid.h"
+#include "core/utils/uid.h"
 #include "core/debug/logger.h"
 
 struct SpriteRect {
@@ -34,7 +34,7 @@ public:
 
         texture = tex;
         rect = { 0, 0, texture->get_width(), texture->get_height() };
-        uuid = make_uuid(file_path);
+        uid = make_uid(file_path);
         return true;
     }
     
@@ -56,11 +56,17 @@ public:
             return;
         }
 
-        float tex_width = (float)texture->get_width();
+        float tex_width  = (float)texture->get_width();
         float tex_height = (float)texture->get_height();
 
-        uv_min = Vector2(rect.x / tex_width, rect.y / tex_height);
-        uv_max = Vector2((rect.x + rect.width) / tex_width, (rect.y + rect.height) / tex_height);
+        float u0 = rect.x / tex_width;
+        float u1 = (rect.x + rect.width) / tex_width;
+
+        float v0 = 1.0f - ((rect.y + rect.height) / tex_height);
+        float v1 = 1.0f - (rect.y / tex_height);
+
+        uv_min = Vector2(u0, v0);
+        uv_max = Vector2(u1, v1);
     }
 
     Texture* texture = nullptr;

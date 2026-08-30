@@ -25,8 +25,8 @@ public:
     bool is_mouse_button_just_pressed(MouseButton button) const;
     bool is_mouse_button_just_released(MouseButton button) const;
 
-    const Vector3& get_mouse_position() const;
-    const Vector3& get_mouse_delta() const;
+    const Vector2& get_mouse_position() const;
+    const Vector2& get_mouse_delta() const;
 
     void add_listener(InputListener* listener);
     void remove_listener(InputListener* listener);
@@ -40,8 +40,8 @@ private:
     std::unordered_map<MouseButton, bool> mouse_states;
     std::unordered_map<MouseButton, bool> previous_mouse_states;
 
-    Vector3 mouse_position;
-    Vector3 mouse_delta;
+    Vector2 mouse_position;
+    Vector2 mouse_delta;
 };
 
 static InputSystem& Input = InputSystem::get_singleton();

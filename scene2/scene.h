@@ -1,7 +1,8 @@
 #pragma once
 #include "ecs.h"
 #include "render/renderer.h"
-#include "scene2/script.h"
+#include "resources/script.h"
+#include "components/script_component.h"
 #include <cassert>
 #include <memory>
 #include <vector>
@@ -12,6 +13,14 @@ namespace ecs { class Registry; }
 struct GameObject;
 class System;
 class Script;
+
+struct EntityRecord {
+    Entity id = entity::INVALID;
+    ComponentMask mask;
+    
+    Entity parent = entity::INVALID;
+    std::vector<Entity> children;
+};
 
 class Scene {
 public:
@@ -30,12 +39,12 @@ public:
     void save(const std::string& path);
 
     Entity create_entity();  
-    void destroy_entity(Entity id);
+    void destroy(Entity id);
 
     GameObject create_game_object();
-    void destroy_game_object(GameObject game_object);
+    void destroy(GameObject game_object);
 
-    const std::vector<std::pair<Entity, ComponentMask>>&
+    const std::vector<EntityRecord>&
         get_entities() const { return entities; }
 
     template<typename T, typename... TArgs>
@@ -46,6 +55,14 @@ public:
     
     template<typename T>
     void remove_component(Entity id);
+    
+    void set_parent(Entity child, Entity parent);
+    void remove_parent(Entity child);
+    Entity get_parent(Entity child) const;
+    const std::vector<Entity>& get_children(Entity parent) const;
+ 
+    template<typename Fn>
+    void each_child(Entity parent, Fn&& fn, bool recursive = true) const;
 
     template<typename T, typename... Args>
     Script& add_script(Entity entity, Args&&... args);
@@ -55,7 +72,7 @@ public:
 private:
     bool initialized = false;
     
-    std::vector<std::pair<Entity, ComponentMask>> entities;
+    std::vector<EntityRecord> entities;
     std::vector<Entity> free_entities;
     std::vector<std::unique_ptr<ComponentPool>> component_pools;
 
@@ -85,14 +102,14 @@ T& Scene::assign_component(Entity id, TArgs&&... args) {
     T* raw = new (component_pools[component_id]->get(entity::index(id)))
         T(std::forward<TArgs>(args)...);
 
-    entities[entity::index(id)].second.set(component_id);
+    entities[entity::index(id)].mask.set(component_id);
     return *raw;
 }
 
 template<typename T>
 T& Scene::get_component(Entity id) {
     auto component_id = type_id<T>();
-    assert(entities[entity::index(id)].second.test(component_id)
+    assert(entities[entity::index(id)].mask.test(component_id)
            && "Scene::get_component: entity does not have this component");
 
     return *static_cast<T*>(component_pools[component_id]->get(entity::index(id)));
@@ -100,14 +117,23 @@ T& Scene::get_component(Entity id) {
 
 template<typename T>
 void Scene::remove_component(Entity id) {
-    if (entities[entity::index(id)].first != id)
+    if (entities[entity::index(id)].id != id)
         return;
 
-    entities[entity::index(id)].second.reset(type_id<T>());
+    entities[entity::index(id)].mask.reset(type_id<T>());
+}
+
+template<typename Fn>
+void Scene::each_child(Entity parent, Fn&& fn, bool recursive) const {
+    for (Entity child : get_children(parent)) {
+        fn(child);
+        if (recursive)
+            each_child(child, std::forward<Fn>(fn), true);
+    }
 }
 
 template<typename T, typename... Args>
-Script& Scene::add_script(Entity entity, Args&&... args) {
+inline Script& Scene::add_script(Entity entity, Args&&... args) {
     auto& comp = assign_component<ScriptComponent>(
         entity, ScriptComponent::create<T>(std::forward<Args>(args)...)
     );

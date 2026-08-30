@@ -1,3 +1,3 @@
 src += files(
-    'main_2d.cpp'
+    'main_gui.cpp'
 )

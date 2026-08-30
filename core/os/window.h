@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
-#include "SDL_video.h"
 #include <variant>
+#include <SDL2/SDL_video.h>
 #include <vector>
 #include <functional>
 

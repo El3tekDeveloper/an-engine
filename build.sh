@@ -25,4 +25,4 @@ meson compile -C "$BUILD_DIR"
 ln -sf "$BUILD_DIR/compile_commands.json" compile_commands.json
 
 echo "Running..."
-"./$BUILD_DIR/Game"
+"./$BUILD_DIR/an-engine"

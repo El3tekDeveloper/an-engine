@@ -13,6 +13,7 @@ struct GenContext {
     std::string type;
     std::string type_safe;
     std::string scope_var;
+    std::string include_root;
 };
 
 class GeneratorPlugin {

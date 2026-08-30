@@ -1,6 +1,6 @@
 #pragma once
 #include "scene.h"
-#include "scene2/system.h"
+#include "systems/system.h"
 
 namespace ecs {
 
@@ -21,12 +21,12 @@ struct View {
             : scene(scene), index(index), mask(mask), all(all) {}
 
         bool valid_index() {
-            return entity::is_valid(scene->get_entities()[index].first)
-                && (all || mask == (mask & scene->get_entities()[index].second));
+            return entity::is_valid(scene->get_entities()[index].id)
+                && (all || mask == (mask & scene->get_entities()[index].mask));
         }
 
         Entity operator*() const {
-            return scene->get_entities()[index].first;
+            return scene->get_entities()[index].id;
         }
 
         bool operator==(const Iterator& other) const {
@@ -52,8 +52,8 @@ struct View {
     const Iterator begin() const {
         int first_index = 0;
         while (first_index < m_scene->get_entities().size()
-                && (component_mask != (component_mask & m_scene->get_entities()[first_index].second)
-                || !entity::is_valid(m_scene->get_entities()[first_index].first))) {
+                && (component_mask != (component_mask & m_scene->get_entities()[first_index].mask)
+                || !entity::is_valid(m_scene->get_entities()[first_index].id))) {
             first_index++;
         }
         return Iterator(m_scene, first_index, component_mask, all);
@@ -85,8 +85,8 @@ public:
     bool valid(Entity e) const {
         uint32_t idx = ecs::entity::index(e);
         return idx < m_scene->get_entities().size()
-            && m_scene->get_entities()[idx].first == e
-            && ecs::entity::is_valid(m_scene->get_entities()[idx].first);
+            && m_scene->get_entities()[idx].id == e
+            && ecs::entity::is_valid(m_scene->get_entities()[idx].id);
     }
 
     template<typename... ComponentType>
@@ -97,7 +97,7 @@ public:
         ecs::ComponentType component_ids[] = { type_id<ComponentType>()... };
         for (auto id : component_ids) mask.set(id);
 
-        const ComponentMask& entity_mask = m_scene->get_entities()[ecs::entity::index(e)].second;
+        const ComponentMask& entity_mask = m_scene->get_entities()[ecs::entity::index(e)].mask;
         return mask == (mask & entity_mask);
     }
 
@@ -109,12 +109,12 @@ public:
         ecs::ComponentType component_ids[] = { type_id<ComponentType>()... };
         for (auto id : component_ids) mask.set(id);
 
-        const ComponentMask& entity_mask = m_scene->get_entities()[ecs::entity::index(e)].second;
+        const ComponentMask& entity_mask = m_scene->get_entities()[ecs::entity::index(e)].mask;
         return (mask & entity_mask).any();
     }
 
     ComponentMask mask_of(Entity e) const {
-        return valid(e) ? m_scene->get_entities()[ecs::entity::index(e)].second : ComponentMask{};
+        return valid(e) ? m_scene->get_entities()[ecs::entity::index(e)].mask : ComponentMask{};
     }
 
     template<typename T, typename... Args>
@@ -137,20 +137,20 @@ public:
     }
 
     inline void destroy(Entity e) {
-        m_scene->destroy_entity(e);
+        m_scene->destroy(e);
     }
 
     size_t alive_count() const {
         size_t count = 0;
-        for (auto& [entity, mask] : m_scene->get_entities())
-            if (ecs::entity::is_valid(entity)) ++count;
+        for (auto& entity : m_scene->get_entities())
+            if (ecs::entity::is_valid(entity.id)) ++count;
         return count;
     }
 
     template<typename Fn>
     inline void each(Fn&& fn) {
-        for (auto& [entity, mask] : m_scene->get_entities())
-            if (ecs::entity::is_valid(entity)) fn(entity);
+        for (auto& entity : m_scene->get_entities())
+            if (ecs::entity::is_valid(entity.id)) fn(entity);
     }
 
 private:

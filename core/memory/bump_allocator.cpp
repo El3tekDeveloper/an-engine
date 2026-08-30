@@ -6,6 +6,13 @@
 BumpAllocator::BumpAllocator(size_t size) {
     begin = (std::byte*)malloc(size);
 
+    if (!begin) {
+        LOG_ERROR("BumpAllocator failed to allocate {} bytes!", size);
+        current = nullptr;
+        end = nullptr;
+        return;
+    }
+
     current = begin;
     end = begin + size;
 }
@@ -34,11 +41,12 @@ void BumpAllocator::reset() {
 }
 
 size_t BumpAllocator::used() const {
-    return (size_t)(begin - current);
+    return (size_t)(current - begin);
 }
 size_t BumpAllocator::capacity() const {
-    return (size_t)(end - current);
+    return (size_t)(end - begin);
 }
 size_t BumpAllocator::remaining() const {
-    return capacity() - used();
+    return (size_t)(end - current);
 }
+

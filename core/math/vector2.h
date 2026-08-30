@@ -1,5 +1,7 @@
 #pragma once
+#include "core/math/vector_convert.h"
 #include <cmath>
+#include <functional>
 
 struct [[nodiscard]] alignas(8) Vector2 {
     enum Axis {
@@ -18,6 +20,11 @@ struct [[nodiscard]] alignas(8) Vector2 {
 
     constexpr Vector2(float all)
         : x(all), y(all) {}
+
+    template<typename V> requires vecconv::ConvertibleFrom<V, Vector2>
+    constexpr Vector2(const V& v)
+    : x(static_cast<float>(vecconv::comp_x(v))),
+      y(static_cast<float>(vecconv::comp_y(v))) {};
 
     // Constants
     static const Vector2 Zero;
@@ -155,6 +162,16 @@ struct [[nodiscard]] alignas(8) Vector2 {
     }
 };
 
+namespace std {
+
+template<>
+struct hash<Vector2> {
+    size_t operator()(const Vector2& v) const noexcept {
+        return hash<float>{}(v.x) ^ (hash<float>{}(v.y) << 1);
+    }
+};
+
+}
 
 inline const Vector2 Vector2::Zero  = {0,0};
 inline const Vector2 Vector2::One   = {1,1};

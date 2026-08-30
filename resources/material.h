@@ -2,7 +2,7 @@
 #include "core/math/color.h"
 #include "core/math/vector2.h"
 #include "resources/gpu_types.h"
-#include "resources/recource.h"
+#include "resources/resource.h"
 #include "resources/texture.h"
 #include <cstdint>
 

@@ -1,5 +1,6 @@
-#include "render/renderer.h"
+#include "render/viewport.h"
 #include "resources/mesh.h"
+#include "resources/sprite.h"
 #include "tools/reflector/type_registry.h"
 #include <format>
 #include <string>
@@ -9,8 +10,9 @@ const bool resources_registered = [] {
         "Resource",
         [](const void* p) -> std::string {
             const auto& r = *static_cast<const Resource*>(p);
-            return std::format("Resource({})", r.get_uuid());
+            return std::format("[{}]", r.get_uid());
         },
+        nullptr,
         TypeKind::Class
     );
 
@@ -18,8 +20,9 @@ const bool resources_registered = [] {
         "Material",
         [](const void* p) -> std::string {
             const auto& m = *static_cast<const Material*>(p);
-            return std::format("Material({})", m.get_uuid());
+            return std::format("[{}]", m.get_uid());
         },
+        nullptr,
         TypeKind::Class
     );
 
@@ -27,8 +30,9 @@ const bool resources_registered = [] {
         "Mesh",
         [](const void* p) -> std::string {
             const auto& m = *static_cast<const Mesh*>(p);
-            return std::format("Mesh({})", m.name);
+            return std::format("[{}]", m.name);
         },
+        nullptr,
         TypeKind::Class
     );
     
@@ -36,8 +40,9 @@ const bool resources_registered = [] {
         "Sprite",
         [](const void* p) -> std::string {
             const auto& s = *static_cast<const Sprite*>(p);
-            return std::format("Sprite({})", s.get_uuid());
+            return std::format("[{}]", s.get_uid());
         },
+        nullptr,
         TypeKind::Class
     );
 
@@ -45,8 +50,9 @@ const bool resources_registered = [] {
         "ViewPort",
         [](const void* p) -> std::string {
             const auto& v = *static_cast<const ViewPort*>(p);
-            return std::format("{},{}", v.width, v.height);
+            return std::format("[{},{}]", v.width, v.height);
         },
+        nullptr,
         TypeKind::Class
     );
 

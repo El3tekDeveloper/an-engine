@@ -1,6 +1,6 @@
 #pragma once
 #include "component.h"
-#include "core/utils/uuid.h"
+#include "core/utils/uid.h"
 #include "ecs.h"
 #include "tools/reflector/type_registry.h"
 #include <memory>
@@ -81,7 +81,7 @@ private:
     ECS::ComponentList component_list;
     ECS::ComponentBitset mask;
     
-    UUID uid = UUID_INVALID;
+    UID uid = UID_INVALID;
 
     virtual void on_component_added(Component* comp) {};
 

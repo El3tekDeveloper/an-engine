@@ -46,6 +46,38 @@ std::string IO::read_file(const std::string& path, BumpAllocator& allocator) {
     return std::string(data, (size_t)size);
 }
 
+std::string IO::read_file(const std::string& path) {
+    std::ifstream file(IO::resolve_path(path), std::ios::binary | std::ios::ate);
+    if (!file) {
+        LOG_ERROR("Failed to open file: '{}'", path);
+        return {};
+    }
+
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    BumpAllocator& allocator = get_scratch_allocator((size_t)size + 1);
+
+    char* data = static_cast<char*>(allocator.alloc((size_t)size + 1));
+    if (!data) {
+        LOG_ERROR("Invalid data pointer (nullptr).");
+        allocator.reset();
+        return {};
+    }
+
+    if (!file.read(data, size)) {
+        LOG_ERROR("Failed to read {} bytes from file.", size);
+        allocator.reset();
+        return {};
+    }
+
+    data[size] = '\0';
+    std::string result(data, (size_t)size);
+
+    allocator.reset();
+    return result;
+}
+
 std::byte* IO::read_bytes(const std::string& path, BumpAllocator& allocator) {
     std::ifstream file(IO::resolve_path(path), std::ios::binary | std::ios::ate);
 
@@ -58,6 +90,34 @@ std::byte* IO::read_bytes(const std::string& path, BumpAllocator& allocator) {
     file.seekg(0, std::ios::beg);
 
     std::byte* data = static_cast<std::byte*>(allocator.alloc((size_t)size));
+
+    if (!data) {
+        LOG_ERROR("Invalid data pointer (nullptr).");
+        return nullptr;
+    }
+
+    if (!file.read(reinterpret_cast<char*>(data), size)) {
+        LOG_ERROR("Failed to read {} bytes from file.", size);
+        return nullptr;
+    }
+
+    return data;
+}
+
+std::byte* IO::read_bytes(const std::string& path) {
+    std::ifstream file(IO::resolve_path(path), std::ios::binary | std::ios::ate);
+
+    if (!file) {
+        LOG_ERROR("Failed to open file: '{}'", path);
+        return nullptr;
+    }
+
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    BumpAllocator& allocator = get_scratch_allocator((size_t)size + 1);
+
+    std::byte* data = static_cast<std::byte*>(allocator.alloc((size_t)size + 1));
 
     if (!data) {
         LOG_ERROR("Invalid data pointer (nullptr).");

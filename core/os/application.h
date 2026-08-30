@@ -10,6 +10,7 @@ public:
 
     Window* create_window(WindowDesc desc);
     void destroy_window(Window* window);
+    void destroy_all_windows();
     
     void poll_events();
 

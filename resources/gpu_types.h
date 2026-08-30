@@ -6,7 +6,6 @@
 #include "core/math/vector3i.h"
 #include "core/math/vector4.h"
 #include "tools/reflector/type_registry.h"
-#include <clang/AST/ASTDumperUtils.h>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -35,27 +34,28 @@ inline const std::unordered_map<Type*, GpuTypeInfo>& gpu_types() {
     return types;
 }
 
-class GpuHandle {
+class GpuHandle : public TypeClass {
 public:
     GpuHandle() = default;
-    explicit GpuHandle(std::string name)
-        : name(std::move(name)) {}
+    explicit GpuHandle(std::string name) {
+        m_name = std::move(name);
+    }
 
     ~GpuHandle() = default;
 
     template<typename T>
     Field& add_filed(std::string_view name) {
-        Type* t = get_type<T>();
-        if (!t)
+        Type* type = get_type<T>();
+        if (!type)
             LOG_ERROR("GpuHandle: type for field '{}' is not registered", name);
 
-        auto it = gpu_types().find(t);
+        auto it = gpu_types().find(type);
         if (it == gpu_types().end()) {
-            LOG_ERROR("GpuHandle: type '{}' for field '{}' has no GPU representation", t ? t->get_name() : "?", name);
+            LOG_ERROR("GpuHandle: type '{}' for field '{}' has no GPU representation", type ? type->get_name() : "?", name);
 
             Field f;
             f.name = std::string(name);
-            f.type = t;
+            f.type = type;
             m_fields.push_back(std::move(f));
             return m_fields.back();
         }
@@ -65,7 +65,7 @@ public:
 
         Field f;
         f.name = std::string(name);
-        f.type = t;
+        f.type = type;
         f.offset = aligned_offset;
 
         m_current_offset = aligned_offset + info.size;
@@ -76,21 +76,21 @@ public:
 
     template<typename C, typename T>
     Field& add_filed(T C::* member, std::string_view name) {
-        Type* t = get_type<T>();
-        if (!t)
+        Type* type = get_type<T>();
+        if (!type)
             LOG_ERROR("GpuHandle: type for field '{}' is not registered", name);
 
         size_t offset = reinterpret_cast<size_t>(
             &(reinterpret_cast<C*>(0)->*member)
         );
 
-        auto it = gpu_types().find(t);
+        auto it = gpu_types().find(type);
         if (it == gpu_types().end()) {
-            LOG_ERROR("GpuHandle: type '{}' for field '{}' has no GPU representation", t ? t->get_name() : "?", name);
+            LOG_ERROR("GpuHandle: type '{}' for field '{}' has no GPU representation", type ? type->get_name() : "?", name);
 
             Field f;
             f.name = std::string(name);
-            f.type = t;
+            f.type = type;
             f.offset = offset;
             m_fields.push_back(std::move(f));
             return m_fields.back();
@@ -103,7 +103,7 @@ public:
 
         Field f;
         f.name = std::string(name);
-        f.type = t;
+        f.type = type;
         f.offset = offset;
 
         m_fields.push_back(std::move(f));
@@ -114,7 +114,7 @@ public:
 
     std::string get_string() const {
         std::string s;
-        s += std::format("struct {} {{\n", name);
+        s += std::format("struct {} {{\n", m_name);
 
         for (auto& f : m_fields) {
             std::string gpu_type_name = f.type->get_name();
@@ -130,8 +130,6 @@ public:
     }
 
 private:
-    std::string name;
-    std::vector<Field> m_fields;
     size_t m_current_offset = 0;
 };
 

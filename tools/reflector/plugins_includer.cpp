@@ -1,17 +1,3 @@
-// gen_plugins.cpp
-//
-// Scans the source tree for reflector generator plugin headers and
-// generates a single aggregator header that #includes all of them.
-//
-// This lets tools/reflector/plugin_main.cpp include one generated file
-// instead of needing a manual #include added for every new plugin.
-//
-// Usage:
-//   gen_plugins <source_root> <output_file>
-//
-// Portable: uses only the C++17 standard library (<filesystem>), so it
-// builds and runs identically on Windows (MSVC/MinGW) and Linux/macOS.
-
 #include <algorithm>
 #include <filesystem>
 #include <fstream>

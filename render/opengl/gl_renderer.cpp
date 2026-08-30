@@ -4,8 +4,10 @@
 #include "core/math/vector2.h"
 #include "resources/material.h"
 #include "resources/opengl/gl_texture.h"
+#include "resources/resource.h"
 #include "resources/resource_manager.h"
 #include "resources/mesh.h"
+#include "resources/style_box.h"
 #include "resources/vertex.h"
 #include <glad/glad.h>
 #include <algorithm>
@@ -13,7 +15,7 @@
 #include <stb_image.h>
 
 struct GLContext {
-    GLuint vao_id;
+    std::unordered_map<SDL_GLContext, GLuint> vaos;
 
     GLuint mesh_vbo_id;
     GLuint mesh_ibo_id;
@@ -31,9 +33,33 @@ struct GLContext {
     GLint sprite_uv_rect_loc;
     GLint sprite_transform_loc;
     GLint sprite_tint_loc;
+    
+    GLuint stylebox_program_id;
+    GLint stylebox_screen_loc;
+    GLint stylebox_transform_loc;
+    GLuint stylebox_ssbo_id;
 };
 
 static GLContext context;
+
+static GLuint get_vao_for_current_context() {
+    SDL_GLContext current = SDL_GL_GetCurrentContext();
+    auto it = context.vaos.find(current);
+    if (it != context.vaos.end())
+        return it->second;
+
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    context.vaos[current] = vao;
+
+    glEnable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_FRAMEBUFFER_SRGB);
+    glEnable(GL_MULTISAMPLE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    return vao;
+}
 
 bool Renderer::init(BumpAllocator* transient_storage) {
     ResourceManager.get_registry<Texture>().set_factory(
@@ -82,14 +108,16 @@ bool Renderer::init(BumpAllocator* transient_storage) {
     context.sprite_transform_loc = glGetUniformLocation(context.sprite_program_id, "sprite_transform");
     context.sprite_tint_loc = glGetUniformLocation(context.sprite_program_id, "tint_color");
 
-    glGenVertexArrays(1, &context.vao_id);
-    glBindVertexArray(context.vao_id);
+    context.stylebox_program_id = create_program("stylebox.vert", "stylebox.frag", {StyleBox::get_gpu_handle()}, *transient_storage);
+    if (!context.stylebox_program_id) return false;
+    glUseProgram(context.stylebox_program_id);
 
-    glEnable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_FRAMEBUFFER_SRGB);
-    glEnable(GL_MULTISAMPLE);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    context.stylebox_screen_loc = glGetUniformLocation(context.stylebox_program_id, "u_screen_size");
+    context.stylebox_transform_loc = glGetUniformLocation(context.stylebox_program_id, "u_box_transform");
+
+    glGenBuffers(1, &context.stylebox_ssbo_id);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, context.stylebox_ssbo_id);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, StyleBox::gpu_size(), nullptr, GL_DYNAMIC_DRAW);
 
     initialized = true;
     return true;
@@ -98,6 +126,8 @@ bool Renderer::init(BumpAllocator* transient_storage) {
 void Renderer::render(ViewPort& viewport, RenderData& render_data) {
     if (!initialized || !viewport.target)
         return;
+
+    glBindVertexArray(get_vao_for_current_context());
 
     RenderTarget* target = viewport.target;
     target->resize(viewport.width, viewport.height);
@@ -167,6 +197,7 @@ void Renderer::render(ViewPort& viewport, RenderData& render_data) {
         }
     }
 
+
     if (!render_data.sprite_instances.empty()) {
         std::sort(render_data.sprite_instances.begin(), render_data.sprite_instances.end(),
             [](const SpriteInstance& a, const SpriteInstance& b) {
@@ -201,9 +232,42 @@ void Renderer::render(ViewPort& viewport, RenderData& render_data) {
         }
     }
 
-    target->resolve();
+    if (!render_data.panel_instances.empty()) {
+        glUseProgram(context.stylebox_program_id);
+        glUniform2f(context.stylebox_screen_loc, viewport.width, viewport.height);
 
+        for (const PanelInstance& panel_instance : render_data.panel_instances) {
+            const StyleBox* panel = panel_instance.panel;
+            if (!panel) continue;
+
+            const char* gpu_start = reinterpret_cast<const char*>(panel) + offsetof(StyleBox, bg_color);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, context.stylebox_ssbo_id);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, StyleBox::gpu_size(), nullptr, GL_STREAM_DRAW);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, StyleBox::gpu_size(), gpu_start, GL_STREAM_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, context.stylebox_ssbo_id);
+            
+            const Matrix4& mat = panel_instance.model;
+            Vector2 position = Vector2(mat[0][3], mat[1][3]);
+            Vector2 size = Vector2(
+                std::sqrt(mat[0][0] * mat[0][0] +
+                          mat[0][1] * mat[0][1] +
+                          mat[0][2] * mat[0][2]),
+
+                std::sqrt(mat[1][0] * mat[1][0] +
+                          mat[1][1] * mat[1][1] +
+                          mat[1][2] * mat[1][2])
+            );
+            
+            glUniform4f(context.stylebox_transform_loc, position.x, position.y, size.x, size.y);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
+    }
+
+    target->resolve();
+    
     render_data.mesh_instances.clear();
+    render_data.sprite_instances.clear();
+    render_data.panel_instances.clear();
 }
 
 void Renderer::destroy() {
@@ -212,9 +276,15 @@ void Renderer::destroy() {
     glDeleteBuffers(1, &context.material_ubo_id);
     glDeleteBuffers(1, &context.mesh_vbo_id);
     glDeleteBuffers(1, &context.mesh_ibo_id);
-    glDeleteVertexArrays(1, &context.vao_id);
+    glDeleteBuffers(1, &context.stylebox_ssbo_id);
+
+    for (auto& [ctx, vao] : context.vaos)
+        glDeleteVertexArrays(1, &vao);
+    context.vaos.clear();
+
     glDeleteProgram(context.mesh_program_id);
     glDeleteProgram(context.sprite_program_id);
+    glDeleteProgram(context.stylebox_program_id);
 
     initialized = false;
 }

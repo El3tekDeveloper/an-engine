@@ -43,6 +43,14 @@ void Application::destroy_window(Window* window) {
     );
 }
 
+void Application::destroy_all_windows() {
+    windows.erase(
+        std::remove_if(windows.begin(), windows.end(),
+            [](const std::unique_ptr<Window>& w) { return w->should_close(); }),
+        windows.end()
+    );
+}
+
 void Application::poll_events() {
     for (const WindowEventData& event : backend->poll_events()) {
         if (event.type == WindowEvent::AppQuit) {

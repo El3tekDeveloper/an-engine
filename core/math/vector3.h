@@ -1,5 +1,7 @@
 #pragma once
+#include "core/math/vector_convert.h"
 #include <cmath>
+#include <functional>
 
 struct [[nodiscard]] alignas(16) Vector3 {
     enum Axis {
@@ -20,6 +22,12 @@ struct [[nodiscard]] alignas(16) Vector3 {
 
     constexpr Vector3(float all)
         : x(all), y(all), z(all) {}
+
+    template<typename V> requires vecconv::ConvertibleFrom<V, Vector3>
+    constexpr Vector3(const V& v)
+    : x(static_cast<float>(vecconv::comp_x(v))),
+      y(static_cast<float>(vecconv::comp_y(v))),
+      z(static_cast<float>(vecconv::comp_z(v, 0.0f))) {};
 
     // Constants
     static const Vector3 Zero;
@@ -135,8 +143,12 @@ struct [[nodiscard]] alignas(16) Vector3 {
         return x*v.x + y*v.y + z*v.z;
     }
 
-    float cross(const Vector3& v) const {
-        return x*v.y - y*v.x - z*v.z;
+    Vector3 cross(const Vector3& v) const {
+        return {
+            y*v.z - z*v.y,
+            z*v.x - x*v.z,
+            x*v.y - y*v.x
+        };
     }
 
     float distance_to(const Vector3& v) const {
@@ -175,6 +187,16 @@ struct [[nodiscard]] alignas(16) Vector3 {
     }
 };
 
+namespace std {
+
+template<>
+struct hash<Vector3> {
+    size_t operator()(const Vector3& v) const noexcept {
+        return hash<float>{}(v.x) ^ (hash<float>{}(v.y) << 1) ^ (hash<float>{}(v.z) << 2);
+    }
+};
+
+}
 
 inline const Vector3 Vector3::Zero  = {0, 0, 0};
 inline const Vector3 Vector3::One   = {1, 1, 1};

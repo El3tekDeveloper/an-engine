@@ -1,6 +1,6 @@
 #pragma once
 #include "resources/image.h"
-#include "resources/recource.h"
+#include "resources/resource.h"
 #include <cstdint>
 
 enum class TextureWrap {

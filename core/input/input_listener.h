@@ -1,5 +1,5 @@
 #pragma once
-#include "core/math/vector3.h"
+#include "core/math/vector2.h"
 #include "core/os/keyboard.h"
 
 namespace Mouse {
@@ -30,7 +30,7 @@ protected:
     virtual void on_mouse_button_down(MouseButton button) {}
     virtual void on_mouse_button_up(MouseButton button) {}
 
-    virtual void on_mouse_move(const Vector3& position, const Vector3& delta) {}
+    virtual void on_mouse_move(const Vector2& position, const Vector2& delta) {}
     virtual void on_mouse_wheel(float x, float y) {}
 
     friend class InputSystem;

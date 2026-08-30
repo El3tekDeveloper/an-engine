@@ -1,5 +1,7 @@
 #pragma once
+#include "core/math/vector_convert.h"
 #include <cmath>
+#include <functional>
 
 struct [[nodiscard]] Vector2i {
     enum Axis {
@@ -18,6 +20,11 @@ struct [[nodiscard]] Vector2i {
 
     constexpr Vector2i(int all)
         : x(all), y(all) {}
+
+    template<typename V> requires vecconv::ConvertibleFrom<V, Vector2i>
+    constexpr Vector2i(const V& v)
+    : x(static_cast<int>(vecconv::comp_x(v))),
+      y(static_cast<int>(vecconv::comp_y(v))) {};
  
     // Constants
     static const Vector2i Zero;
@@ -155,6 +162,16 @@ struct [[nodiscard]] Vector2i {
     }
 };
 
+namespace std {
+
+template<>
+struct hash<Vector2i> {
+    size_t operator()(const Vector2i& v) const noexcept {
+        return hash<int>{}(v.x) ^ (hash<int>{}(v.y) << 1);
+    }
+};
+
+}
 
 inline const Vector2i Vector2i::Zero  = {0,0};
 inline const Vector2i Vector2i::One   = {1,1};

@@ -1,7 +1,7 @@
 #include "scene.h"
 #include "core/debug/logger.h"
 #include "core/io/file_access.h"
-#include "core/utils/uuid.h"
+#include "core/utils/uid.h"
 #include "game_object.h"
 #include "render/renderer.h"
 #include "scene/camera_component.h"
@@ -19,7 +19,7 @@ GameObject& Scene::create_game_object(std::string name) {
     
     auto go = std::make_unique<GameObject>(name);
     GameObject& ref = *go;
-    ref.uid = make_uuid();
+    ref.uid = make_uid();
     game_objects.emplace_back(std::move(go));
     return ref;
 }
@@ -71,7 +71,7 @@ void Scene::draw(RenderData& rd) {
 
 void Scene::save(std::string path) {
     std::ostringstream out;
-    out << "[scene uid=\"" << std::to_string(make_uuid(path)) << "\"]\n\n";
+    out << "[scene uid=\"" << std::to_string(make_uid(path)) << "\"]\n\n";
 
     for (const auto& go : game_objects) {
         out << std::format("[game_object name=\"{}\" uid=\"{}\"]\n", go->get_name(), go->uid);

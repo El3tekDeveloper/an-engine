@@ -1,7 +1,6 @@
 #include "input.h"
 #include "SDL_events.h"
 #include "SDL_keycode.h"
-#include "core/math/vector3.h"
 #include "core/os/keyboard.h"
 #include <unordered_map>
 #include <utility>
@@ -196,7 +195,7 @@ void InputSystem::begin_frame() {
     previous_key_states = key_states;
     previous_mouse_states = mouse_states;
 
-    mouse_delta = Vector3::Zero;
+    mouse_delta = Vector2::Zero;
 }
 
 void InputSystem::poll_event(void* p_event) {
@@ -345,10 +344,10 @@ bool InputSystem::is_mouse_button_just_released(MouseButton button) const {
     return !current && previous;
 }
 
-const Vector3& InputSystem::get_mouse_position() const {
+const Vector2& InputSystem::get_mouse_position() const {
     return mouse_position;
 }
 
-const Vector3& InputSystem::get_mouse_delta() const {
+const Vector2& InputSystem::get_mouse_delta() const {
     return mouse_delta;
 }

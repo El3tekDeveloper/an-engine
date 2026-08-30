@@ -188,7 +188,7 @@ void register_lua_bindings(sol::state& lua) {
         "name", sol::property([](TypeClass& tc) { return tc.get_name(); })
     );
 
-    for (auto& [name, tc] : CLASS_REGISTRY) {
+    for (auto& [name, tc] : class_registry()) {
         if (!tc || !tc->create_instance) continue;
         lua[name] = tc;
     }

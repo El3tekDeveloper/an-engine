@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <glad/glad.h>
 #include "core/io/path.h"
-#include "core/utils/uuid.h"
+#include "core/utils/uid.h"
 #include "resources/texture.h"
 #include "core/debug/logger.h"
 
@@ -32,7 +32,7 @@ public:
             LOG_ERROR("Failed to load texture: '{}'", file_path.c_str());
             return false;
         }
-        uuid = make_uuid(IO::resolve_path(file_path));
+        uid = make_uid(IO::resolve_path(file_path));
         
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id);

@@ -1,3 +1,4 @@
 src += files(
-    'register_types.cpp'
+    'register_types.cpp',
+    'lua/lua_script.cpp'
 )

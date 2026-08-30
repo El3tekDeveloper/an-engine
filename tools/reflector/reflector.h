@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <cctype>
 
 using MatchFinder = clang::ast_matchers::MatchFinder;
 
@@ -65,19 +66,21 @@ public:
         os << "// DO NOT EDIT\n";
         os << "#pragma once\n";
         os << "#include \"tools/reflector/type_registry.h\"\n";
-
+        
+        std::string include_root;
         if (ctx) {
             clang::SourceLocation loc = m_record->getLocation();
             clang::SourceManager& sm  = ctx->getSourceManager();
             loc = sm.getFileLoc(loc);
             if (loc.isValid()) {
                 llvm::StringRef filePath = sm.getFilename(loc);
-                static constexpr llvm::StringLiteral kMarkers[] = { "scene/", "./" };
+                static constexpr llvm::StringLiteral kMarkers[] = { "./" };
                 llvm::StringRef rel = filePath;
                 for (auto marker : kMarkers) {
                     auto pos = filePath.find(marker);
                     if (pos != llvm::StringRef::npos) {
                         rel = filePath.substr(pos);
+                        include_root = filePath.substr(0, pos).str();
                         break;
                     }
                 }
@@ -86,7 +89,7 @@ public:
         }
 
         for (auto& plugin : GeneratorRegistry::instance().plugins())
-            plugin->on_class_begin(m_record, {ctx, &os, type, type_safe, ""});
+            plugin->on_class_begin(m_record, {ctx, &os, type, type_safe, "", include_root});
 
         os << "\n";
         os << "template<>\n";
@@ -102,7 +105,7 @@ public:
         for (const auto& base : m_record->bases()) {
             std::string base_name = base.getType()->getAsCXXRecordDecl()
                                         ->getQualifiedNameAsString();
-            os << "    c.parent_type = get_class_by_name(\"" << base_name << "\");\n\n";
+            os << "    c.parent_type = static_cast<TypeClass*>(get_type_by_name(\"" << base_name << "\"));\n\n";
             break;
         }
 
@@ -110,7 +113,7 @@ public:
             clang::Attr* export_attr = find_annotation(const_cast<clang::FieldDecl*>(field), "reflect-export");
             if (!export_attr) {
                 for (auto& plugin : GeneratorRegistry::instance().plugins())
-                    plugin->on_field(field, {ctx, &os, type, type_safe, ""});
+                    plugin->on_field(field, {ctx, &os, type, type_safe, "", include_root});
                 continue;
             }
 
@@ -129,7 +132,7 @@ public:
             os << "        f.type->set_name(_ftype_" << fname << ");\n";
 
             for (auto& plugin : GeneratorRegistry::instance().plugins())
-                plugin->on_field(field, {ctx, &os, type, type_safe, "f"});
+                plugin->on_field(field, {ctx, &os, type, type_safe, "f", include_root});
 
             os << "        c.get_fields().push_back(f);\n";
             os << "    }\n";
@@ -139,12 +142,12 @@ public:
             clang::Attr* export_attr = find_annotation(const_cast<clang::FunctionDecl*>(func), "reflect-export");
             if (!export_attr) {
                 for (auto& plugin : GeneratorRegistry::instance().plugins())
-                    plugin->on_function(func, {ctx, &os, type, type_safe, ""});
+                    plugin->on_function(func, {ctx, &os, type, type_safe, "", include_root});
                 continue;
             }
 
-            const std::string fname   = func->getNameAsString();
-            clang::QualType   rqt     = func->getReturnType().getUnqualifiedType();
+            const std::string fname = func->getNameAsString();
+            clang::QualType rqt = func->getReturnType().getNonReferenceType().getUnqualifiedType();
             const std::string rettype = rqt.getAsString();
 
             os << "    {\n";
@@ -157,14 +160,15 @@ public:
             if (rettype != "void") {
                 os << "        fn.return_value.type   = get_type<" << rettype << ">();\n";
             }
+            
             for (auto& plugin : GeneratorRegistry::instance().plugins())
-                plugin->on_function(func, {ctx, &os, type, type_safe, "fn"});
+                plugin->on_function(func, {ctx, &os, type, type_safe, "fn", include_root});
 
             for (unsigned i = 0; i < func->getNumParams(); ++i) {
-                const clang::ParmVarDecl* p     = func->getParamDecl(i);
-                const std::string         pname = p->getNameAsString();
-                clang::QualType           pqt   = p->getType().getUnqualifiedType();
-                const std::string         ptype = pqt.getAsString();
+                const clang::ParmVarDecl* p = func->getParamDecl(i);
+                const std::string pname = p->getNameAsString();
+                clang::QualType pqt = p->getType().getUnqualifiedType();
+                const std::string ptype = pqt.getNonReferenceType().getUnqualifiedType().getAsString();
 
                 os << "        {\n";
                 os << "            static const std::string _pname_" << fname << "_" << i << " = \"" << pname << "\";\n";
@@ -184,7 +188,7 @@ public:
             for (unsigned i = 0; i < func->getNumParams(); ++i) {
                 if (i) call_args += ", ";
                 const clang::ParmVarDecl* p = func->getParamDecl(i);
-                const std::string ptype = p->getType().getUnqualifiedType().getAsString();
+                const std::string ptype = p->getType().getNonReferenceType().getUnqualifiedType().getAsString();
                 call_args += "*static_cast<" + ptype + "*>(args[" + std::to_string(i) + "])";
             }
 
@@ -200,7 +204,7 @@ public:
         }
 
         for (auto& plugin : GeneratorRegistry::instance().plugins())
-            plugin->on_class_end(m_record, {ctx, &os, type, type_safe, "c"});
+            plugin->on_class_end(m_record, {ctx, &os, type, type_safe, "c", include_root});
 
         os << "\n    return &c;\n";
         os << "}\n\n";
@@ -208,8 +212,7 @@ public:
         os << "namespace {\n";
         os << "    struct " << type_safe << "_AutoRegister {\n";
         os << "        " << type_safe << "_AutoRegister() {\n";
-        os << "            CLASS_REGISTRY[\"" << type << "\"] = get_class_impl<" << type << ">();\n";
-        os << "            register_type<"<< type <<">(\""<< type <<"\")\n;";
+        os << "            register_type<" << type << ">(get_class_impl<" << type << ">());\n";
         os << "        }\n";
         os << "    };\n";
         os << "    inline " << type_safe << "_AutoRegister " << type_safe << "_auto_register_instance;\n";
@@ -223,8 +226,10 @@ private:
     std::vector<const clang::FunctionDecl*> m_functions;
 
     static std::string sanitize(const std::string& s) {
-        std::string out = s;
-        for (char& c : out) if (c == ':') c = '_';
+        std::string out;
+        out.reserve(s.size());
+        for (char c : s)
+            out += (std::isalnum(static_cast<unsigned char>(c)) || c == '_') ? c : '_';
         return out;
     }
 };
@@ -246,11 +251,6 @@ public:
     }
 
     void onEndOfTranslationUnit() override {
-        // Multiple reflected classes can share the same source file, and
-        // therefore the same generated output path. Group them by target
-        // file and open each file exactly once, writing every class that
-        // belongs to it in turn -- otherwise each class after the first
-        // truncates and overwrites the ones written before it.
         std::unordered_map<std::string, std::vector<ReflectedClass*>> by_file;
         for (auto& cls : m_classes) {
             by_file[cls.file_name()].push_back(&cls);
@@ -327,7 +327,6 @@ public:
         *gc.os << "        " << gc.scope_var << ".meta[\"range_max\"] = static_cast<double>(" << range_max << ");\n";
     }
 };
- 
 REGISTER_GENERATOR(RangePlugin)
  
 class ButtonPlugin : public GeneratorPlugin {
@@ -344,7 +343,6 @@ public:
             *gc.os << "        " << gc.scope_var << ".meta[\"is_button\"] = true;\n";
     }
 };
- 
 REGISTER_GENERATOR(ButtonPlugin)
 
 inline ClassFinder class_finder;

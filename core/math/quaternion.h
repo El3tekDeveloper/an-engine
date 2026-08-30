@@ -58,9 +58,9 @@ struct [[nodiscard]] Quaternion {
 
         void _apply() {
             *owner = Quaternion::from_euler(
-                to_radians(_pitch),
-                to_radians(_yaw),
-                to_radians(_roll)
+                Math::to_radians(_pitch),
+                Math::to_radians(_yaw),
+                Math::to_radians(_roll)
             );
         }
 
@@ -105,7 +105,7 @@ public:
     static const Quaternion Identity;
 
     static Quaternion Euler(float pitch, float yaw, float roll) {
-        return from_euler(to_radians(pitch), to_radians(yaw), to_radians(roll));
+        return from_euler(Math::to_radians(pitch), Math::to_radians(yaw), Math::to_radians(roll));
     }
 
     static Quaternion from_axis_angle(Vector3 p, float angle) {
@@ -215,7 +215,7 @@ public:
         if (d > 0.9995f)
             return (*this + (target - *this) * t).normalized();
 
-        float angle     = std::acos(d);
+        float angle = std::acos(d);
         float sin_angle = std::sin(angle);
         float ta = std::sin((1.0f - t) * angle) / sin_angle;
         float tb = std::sin(t * angle) / sin_angle;
@@ -288,6 +288,20 @@ inline Quaternion Quaternion::from_matrix(const Matrix4& mat) {
             (mat[1][0] - mat[0][1]) / s
         };
     }
+}
+
+namespace std {
+
+template<>
+struct hash<Quaternion> {
+    size_t operator()(const Quaternion& q) const noexcept {
+        return hash<float>{}(q._x) ^
+            (hash<float>{}(q._y) << 1) ^
+            (hash<float>{}(q._z) << 2) ^
+            (hash<float>{}(q._w) << 3);
+    }
+};
+
 }
 
 template<>

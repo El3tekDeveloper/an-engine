@@ -4,6 +4,7 @@
 #include "resources/mesh.h"
 #include "resources/sprite.h"
 #include <vector>
+#include "resources/style_box.h"
 #include "viewport.h"
 
 enum class ShaderType {
@@ -17,6 +18,7 @@ struct RenderData {
     
     std::vector<MeshInstance> mesh_instances;
     std::vector<SpriteInstance> sprite_instances;
+    std::vector<PanelInstance> panel_instances;
 };
 
 class Renderer {

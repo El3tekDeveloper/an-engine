@@ -1,7 +1,9 @@
 #pragma once
+#include "core/math/vector_convert.h"
 #include <cmath>
+#include <functional>
 
-struct [[nodiscard]] Vector4 {
+struct [[nodiscard]] alignas(16) Vector4 {
     enum Axis {
         X = 0,
         Y = 1,
@@ -22,6 +24,13 @@ struct [[nodiscard]] Vector4 {
 
     constexpr Vector4(float all)
         : x(all), y(all), z(all), w(all) {}
+
+    template<typename V> requires vecconv::ConvertibleFrom<V, Vector4>
+    constexpr Vector4(const V& v)
+    : x(static_cast<float>(vecconv::comp_x(v))),
+      y(static_cast<float>(vecconv::comp_y(v))),
+      z(static_cast<float>(vecconv::comp_z(v, 0.0f))),
+      w(static_cast<float>(vecconv::comp_w(v, 0.0f))) {};
 
     // Constants
     static const Vector4 Zero;
@@ -138,8 +147,13 @@ struct [[nodiscard]] Vector4 {
         return x*v.x + y*v.y + z*v.z;
     }
 
-    float cross(const Vector4& v) const {
-        return x*v.y - y*v.x - z*v.z;
+    Vector4 cross(const Vector4& v) const {
+        return {
+            y*v.z - z*v.y,
+            z*v.x - x*v.z,
+            x*v.y - y*v.x,
+            0.0f
+        };
     }
 
     float distance_to(const Vector4& v) const {
@@ -205,9 +219,22 @@ struct [[nodiscard]] Vector4 {
     }
 };
 
+namespace std {
+
+template<>
+struct hash<Vector4> {
+    size_t operator()(const Vector4& v) const noexcept {
+        return hash<float>{}(v.x) ^
+            (hash<float>{}(v.y) << 1) ^
+            (hash<float>{}(v.z) << 2) ^
+            (hash<float>{}(v.w) << 3);
+    }
+};
+
+}
 
 inline const Vector4 Vector4::Zero  = {0, 0, 0, 0};
-inline const Vector4 Vector4::One   = {1, 1, 1, 0};
+inline const Vector4 Vector4::One   = {1, 1, 1, 1};
 
 inline const Vector4 Vector4::Left  = {-1, 0, 0, 0};
 inline const Vector4 Vector4::Right = { 1, 0, 0, 0};

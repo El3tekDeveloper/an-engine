@@ -1,5 +1,7 @@
 #pragma once
+#include "core/math/vector_convert.h"
 #include <cmath>
+#include <functional>
 
 struct [[nodiscard]] Vector3i {
     enum Axis {
@@ -20,6 +22,12 @@ struct [[nodiscard]] Vector3i {
 
     constexpr Vector3i(int all)
         : x(all), y(all), z(all) {}
+
+    template<typename V> requires vecconv::ConvertibleFrom<V, Vector3i>
+    constexpr Vector3i(const V& v)
+    : x(static_cast<int>(vecconv::comp_x(v))),
+      y(static_cast<int>(vecconv::comp_y(v))),
+      z(static_cast<int>(vecconv::comp_z(v, 0))) {};
 
     // Constants
     static const Vector3i Zero;
@@ -135,8 +143,12 @@ struct [[nodiscard]] Vector3i {
         return x*v.x + y*v.y + z*v.z;
     }
 
-    int cross(const Vector3i& v) const {
-        return x*v.y - y*v.x - z*v.z;
+    Vector3i cross(const Vector3i& v) const {
+        return {
+            y*v.z - z*v.y,
+            z*v.x - x*v.z,
+            x*v.y - y*v.x
+        };
     }
 
     int distance_to(const Vector3i& v) const {
@@ -175,6 +187,16 @@ struct [[nodiscard]] Vector3i {
     }
 };
 
+namespace std {
+
+template<>
+struct hash<Vector3i> {
+    size_t operator()(const Vector3i& v) const noexcept {
+        return hash<float>{}(v.x) ^ (hash<float>{}(v.y) << 1) ^ (hash<float>{}(v.z) << 2);
+    }
+};
+
+}
 
 inline const Vector3i Vector3i::Zero  = {0, 0, 0};
 inline const Vector3i Vector3i::One   = {1, 1, 1};

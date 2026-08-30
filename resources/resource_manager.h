@@ -1,8 +1,8 @@
 #pragma once
 #include "core/debug/logger.h"
 #include "core/io/path.h"
-#include "core/utils/uuid.h"
-#include "resources/recource.h"
+#include "core/utils/uid.h"
+#include "resources/resource.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <vector>
 
-using ResourceHandle = UUID;
+using ResourceHandle = UID;
 
 template <typename T, typename = void>
 struct is_loadable : std::false_type {};
@@ -101,7 +101,7 @@ private:
     ResourceHandle generate_handle() {
         char buf[32];
         std::snprintf(buf, sizeof(buf), "res_%llu", static_cast<unsigned long long>(counter++));
-        return make_uuid(buf);
+        return make_uid(buf);
     }
 
     void grow_if_needed() {
@@ -136,7 +136,7 @@ public:
     template <typename T>
     T* load(const std::string& path) {
         ResourceRegistry<T>& registry = get_registry<T>();
-        ResourceHandle handle = make_uuid(IO::resolve_path(path));
+        ResourceHandle handle = make_uid(IO::resolve_path(path));
 
         if (T* existing = registry.get(handle)) {
             return existing;
@@ -154,7 +154,7 @@ public:
     template <typename T, typename LoadFunc>
     T* load(const std::string& path, LoadFunc&& load_func) {
         ResourceRegistry<T>& registry = get_registry<T>();
-        ResourceHandle handle = make_uuid(path);
+        ResourceHandle handle = make_uid(path);
 
         if (T* existing = registry.get(handle)) {
             return existing;

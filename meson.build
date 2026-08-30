@@ -1,5 +1,5 @@
 project(
-    'cpp-kart',
+    'an-engine',
     ['cpp', 'c'],
     version: '0.1.0',
     default_options: [
@@ -9,34 +9,16 @@ project(
     ]
 )
 
-add_project_arguments('-DENGINE_DEBUG_ENABLED=1', language: ['cpp', 'c'])
-
-src = []
-
-thirdparty_src = [
-    'thirdparty/glad/src/glad.c',
-    'thirdparty/stb/stb_impl.cpp',
-    'thirdparty/cgltf/cgltf_impl.cpp',
-
-    'thirdparty/imgui/src/imgui.cpp',
-    'thirdparty/imgui/src/imgui_demo.cpp',
-    'thirdparty/imgui/src/imgui_draw.cpp',
-    'thirdparty/imgui/src/imgui_impl_opengl3.cpp',
-    'thirdparty/imgui/src/imgui_impl_sdl2.cpp',
-    'thirdparty/imgui/src/imgui_tables.cpp',
-    'thirdparty/imgui/src/imgui_widgets.cpp',
-]
-
-includes = include_directories(
-    '.',
-    'thirdparty/glad/include',
-    'thirdparty/stb',
-    'thirdparty/cgltf',
-    '/usr/include/luajit-2.1',
-    'thirdparty/sol2/include',
-    'thirdparty/imgui/include'
+add_project_arguments(
+    '-DENGINE_DEBUG_ENABLED=' + (get_option('debug') ? '1' : '0'),
+    language: ['cpp', 'c']
 )
 
+src = []
+thirdparty_src = []
+includes = [include_directories('.')]
+
+subdir('thirdparty')
 subdir('tools')
 subdir('core')
 subdir('resources')
@@ -48,12 +30,11 @@ deps = [
     dependency('sdl2'),
     dependency('gl'),
     dependency('freetype2'),
-    dependency('fmt'),
     dependency('luajit'),
 ]
 
 executable(
-    'Game',
+    'an-engine',
     src + thirdparty_src,
     include_directories: includes,
     dependencies: deps,

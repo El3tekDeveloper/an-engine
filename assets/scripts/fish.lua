@@ -9,6 +9,7 @@ local cooldown_timer = 0.0
 local cooldown_interval = 0.25
 
 local sprite
+local sprite_rect
 local anim_time = 0.0
 
 function sprite_x_animation(rect, animation_time, frame_size, frames_count, speed, start_frame)

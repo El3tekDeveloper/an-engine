@@ -3,7 +3,6 @@
 ## Renderer
 - [ ] Redesign renderer architecture.
 - [ ] Vulkan backend.
-- [ ] Redesign OpenGL backend.
 - [x] OpenGL backend.
 - [x] SSBO-based rendering.
 - [x] GPU handles.
@@ -25,11 +24,12 @@
 
 ## OS
 - [x] Redesign application system.
-- [ ] Multiple windows.
+- [x] Multiple windows.
 - [x] Viewports.
 
 ## Resources
 - [x] GPU handle system.
+- [x] Resource Save & Load
 - [ ] Resource lifetime management.
 
 ## Scripting
@@ -73,8 +73,8 @@
 - [ ] Bundle toolchain (Clang, Clangd, Meson, Ninja).
 
 ## Goal
-- [ ] Native C++ as the primary language.
-- [ ] Lua for gameplay logic.
+- [x] Native C++ as the primary language.
+- [x] Lua for gameplay logic.
 - [ ] Zero manual bindings.
 - [ ] Zero manual registration.
 - [ ] Zero toolchain setup.

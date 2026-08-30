@@ -1,5 +1,7 @@
 #pragma once
+#include "core/math/vector_convert.h"
 #include <cmath>
+#include <functional>
 #include <stdexcept>
 
 struct [[nodiscard]] alignas(16) Color {
@@ -13,6 +15,13 @@ struct [[nodiscard]] alignas(16) Color {
 
     constexpr Color(float r, float g, float b, float a = 1.0f)
         : r(r), g(g), b(b), a(a) {}
+
+    template<typename C> requires vecconv::ConvertibleFrom<C, Color>
+    constexpr Color(const C& c)
+    : r(static_cast<float>(vecconv::comp_x(c))),
+      g(static_cast<float>(vecconv::comp_y(c))),
+      b(static_cast<float>(vecconv::comp_z(c, 1.0f))),
+      a(static_cast<float>(vecconv::comp_w(c, 1.0f))) {};
 
     Color(const char* hex) : r(0), g(0), b(0), a(1.0f) {
         if (!hex || hex[0] != '#')
@@ -52,6 +61,20 @@ struct [[nodiscard]] alignas(16) Color {
         }
     }
 };
+
+namespace std {
+
+template<>
+struct hash<Color> {
+    size_t operator()(const Color& c) const noexcept {
+        return hash<float>{}(c.r) ^
+            (hash<float>{}(c.g) << 1) ^
+            (hash<float>{}(c.b) << 2) ^
+            (hash<float>{}(c.a) << 3);
+    }
+};
+
+}
 
 inline const Color Color::White = {1.0f, 1.0f, 1.0f, 1.0f};
 inline const Color Color::Black = {0.0f, 0.0f, 0.0f, 1.0f};
