@@ -8,7 +8,7 @@
 #include "scene/game_object.h"
 #include "resources/mesh.h"
 #include "sol/table.hpp"
-#include "tools/reflector/type_registry.h"
+#include "tools/reflector/runtime/type_registry.h"
 
 struct ArgBox {
     float f{}; int i{}; bool b{}; std::string s{};

@@ -12,7 +12,7 @@
 #include "resources/resource_manager.h"
 #include "resources/sprite.h"
 #include "resources/texture.h"
-#include "scene2/components/component.h"
+#include "scene2/component.h"
 #include "scene2/ecs.h"
 #include "scene2/game_object.h"
 #include "resources/lua/lua_script.h"
@@ -21,7 +21,11 @@
 #include "scene2/systems/render_system.h"
 #include "scene2/scene.h"
 #include "scene2/systems/script_system.h"
-#include "scene2/systems/system.h"
+#include "scene2/system.h"
+
+#if __has_include("project.sln.hxx")
+#include "project.sln.hxx"
+#endif
 
 static RenderData render_data = {
     .clear_color = "#314D79"

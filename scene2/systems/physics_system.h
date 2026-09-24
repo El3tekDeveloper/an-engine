@@ -4,9 +4,9 @@
 #include <unordered_set>
 #include "core/math/vector3.h"
 #include "core/os/time.h"
-#include "scene2/components/component.h"
+#include "scene2/component.h"
 #include "scene2/components/transform.h"
-#include "system.h"
+#include "scene2/system.h"
 #include "scene2/scene.h"
 #include "scene2/registry.h"
 
@@ -219,6 +219,3 @@ private:
     }
 };
 
-#if __REFLECT_GENERATED__
-#include ".generated/physics_system.generated.hxx"
-#endif

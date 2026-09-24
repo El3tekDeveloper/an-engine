@@ -37,6 +37,3 @@ public:
     }
 };
 
-#if __REFLECT_GENERATED__
-#include ".generated/mesh_renderer.generated.hxx"
-#endif

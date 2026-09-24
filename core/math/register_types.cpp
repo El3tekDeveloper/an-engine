@@ -7,7 +7,7 @@
 #include "core/math/vector3i.h"
 #include "core/math/quaternion.h"
 #include "core/math/vector4.h"
-#include "tools/reflector/type_registry.h"
+#include "tools/reflector/runtime/type_registry.h"
 #include <charconv>
 #include <format>
 #include <string>

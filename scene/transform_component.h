@@ -22,6 +22,3 @@ public:
     }
 };
 
-#if __REFLECT_GENERATED__
-#include ".generated/transform_component.generated.hxx"
-#endif

@@ -1,12 +1,6 @@
-[scene uid="615455152"]
+[scene uid="2921322003"]
 
 [entity id="0"]
-- [component type_name="Transform"]
-  - position = [-1.7595475,0,0]
-  - rotation = [0,0,0,1]
-  - scale = [1,1,1]
-
-[entity id="4294967296"]
 - [component type_name="Transform"]
   - position = [0,0,1]
   - rotation = [0,0,0,1]
@@ -18,20 +12,20 @@
   - near_plane = 0.100000
   - far_plane = 100.000000
 
-[entity id="8589934592"]
+[entity id="4294967296"]
 - [component type_name="Transform"]
-  - position = [0,-0.8494071,0]
-  - rotation = [0,0,-0.23473556,0.97205925]
+  - position = [0,-0.8935018,0]
+  - rotation = [0,0,-0.42467472,0.905346]
   - scale = [1,1,1]
 - [component type_name="ScriptComponent"]
 - [component type_name="SpriteRenderer"]
-  - sprite = [4130811603]
+  - sprite = [3562139179]
   - color = [1,1,1,1]
   - flip_x = 1
   - flip_y = 0
   - layer = 0
 - [component type_name="Player"]
 
-[entity id="12884901888"]
+[entity id="8589934592"]
 - [component type_name="GameStateComponent"]
 

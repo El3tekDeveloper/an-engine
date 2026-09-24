@@ -12,9 +12,9 @@
 #include "resources/sprite.h"
 #include "sol/raii.hpp"
 #include "sol/table.hpp"
-#include "tools/reflector/type_registry.h"
+#include "tools/reflector/runtime/type_registry.h"
 #include "scene2/game_object.h"
-#include "scene2/components/component.h"
+#include "scene2/component.h"
 #include "scene2/components/component_ops.h"
 #include <sol/sol.hpp>
 #include <magic_enum/magic_enum.hpp>

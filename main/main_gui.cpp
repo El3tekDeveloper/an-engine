@@ -16,15 +16,20 @@
 #include "render/renderer.h"
 #include "resources/resource_manager.h"
 #include "scene2/components/mesh_renderer.h"
+#include "scene2/components/panel.h"
 #include "scene2/ecs.h"
 #include "scene2/game_object.h"
 #include "scene2/systems/physics_system.h"
 #include "scene2/systems/render_system.h"
 #include "scene2/scene.h"
 #include "scene2/systems/script_system.h"
-#include "scene2/systems/system.h"
+#include "scene2/system.h"
 
 #include "cgltf.h"
+
+#if __has_include("project.sln.hxx")
+#include "project.sln.hxx"
+#endif
 
 static RenderData render_data = {
     .clear_color = "#314D79"
@@ -161,6 +166,11 @@ static void process_gltf_node(const cgltf_node* node,
     }
 }
 
+bool is_hovered(const Vector2& point, Transform trans) {
+    return (point.x >= trans.position.x && point.x <= (trans.position.x + trans.scale.x) &&
+            point.y >= trans.position.y && point.y <= (trans.position.y + trans.scale.y));
+}
+
 int main() {
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
     BumpAllocator transient_storage(GB(4));
@@ -253,9 +263,9 @@ int main() {
     panel.add_component<Panel>(stylebox);
     panel.transform().position = Vector2(5, 5);
     panel.transform().scale = Vector2(100, 200);
+    
 
     GameObject car = scene.create_game_object();
-    car.transform().rotation += Quaternion::Euler(90, 90, 90);
     car.add_component<MeshRenderer>(car_mesh).materials = {mat1};
 
     while (app.is_running()) {
@@ -268,6 +278,12 @@ int main() {
             car.transform().position.z += 30 * Time.delta_time();
         } else if (Input.is_key_pressed(Key::S)) {
             car.transform().position.z -= 30 * Time.delta_time();
+        }
+
+        if (Input.is_key_pressed(Key::D)) {
+            car.transform().rotation.euler.x += 30 * Time.delta_time();
+        } else if (Input.is_key_pressed(Key::A)) {
+            car.transform().rotation.euler.x -= 30 * Time.delta_time();
         }
         
         window->make_current();

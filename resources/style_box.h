@@ -46,6 +46,3 @@ struct PanelInstance {
     Matrix4 model = Matrix4::Identity;
 };
 
-#if __REFLECT_GENERATED__
-#include ".generated/style_box.generated.hxx"
-#endif

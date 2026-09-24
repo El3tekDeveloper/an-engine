@@ -1,5 +1,5 @@
 #pragma once
-#include "component.h"
+#include "scene2/component.h"
 #include "core/math/matrix4.h"
 #include "core/math/vector2.h"
 #include "render/viewport.h"
@@ -11,6 +11,7 @@ enum class CameraType {
 
 struct [[export]] Camera : public Component {
     [[export]] CameraType type = CameraType::Perspective;
+    
     [[export, range(1, 179)]]
     float fov = 60.0f;
     
@@ -47,6 +48,3 @@ inline Vector2 Camera::screen_to_world(const Vector2& screen) {
     return { world.x, world.y };
 }
 
-#if __REFLECT_GENERATED__
-#include ".generated/camera.generated.hxx"
-#endif

@@ -1,7 +1,7 @@
 #pragma once
 #include "resources/style_box.h"
 #include "scene2/ecs.h"
-#include "system.h"
+#include "scene2/system.h"
 #include "scene2/scene.h"
 #include "scene2/registry.h"
 #include "scene2/components/transform.h"

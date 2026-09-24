@@ -2,7 +2,7 @@
 #include "component.h"
 #include "core/utils/uid.h"
 #include "ecs.h"
-#include "tools/reflector/type_registry.h"
+#include "tools/reflector/runtime/type_registry.h"
 #include <memory>
 #include <vector>
 

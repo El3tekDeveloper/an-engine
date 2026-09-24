@@ -7,7 +7,7 @@
 #include "scene/game_object.h"
 #include "scene/lua_behaviour.h"
 #include "scene/scene.h"
-#include "scene/mesh_renderer.h"
+#include "scene/components/mesh_renderer.h"
 
 static RenderData render_data = {
     .clear_color = "#0b0f19"

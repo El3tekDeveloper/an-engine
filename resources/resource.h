@@ -3,10 +3,10 @@
 #include "core/io/file_access.h"
 #include "core/utils/string_utils.h"
 #include "core/utils/uid.h"
-#include "tools/reflector/type_registry.h"
+#include "tools/reflector/runtime/type_registry.h"
 #include <sstream>
 #include <string>
-#include <tools/reflector/type_registry.h>
+#include <tools/reflector/runtime/type_registry.h>
 
 class Resource {
 public:

@@ -1,5 +1,5 @@
 #pragma once
-#include "component.h"
+#include "scene2/component.h"
 #include "scene2/scene.h"
 
 struct ComponentTypeOps {

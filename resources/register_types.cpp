@@ -1,7 +1,7 @@
 #include "render/viewport.h"
 #include "resources/mesh.h"
 #include "resources/sprite.h"
-#include "tools/reflector/type_registry.h"
+#include "tools/reflector/runtime/type_registry.h"
 #include <format>
 #include <string>
 

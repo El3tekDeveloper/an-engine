@@ -5,9 +5,9 @@
 
 namespace IO {
 
-fs::path assets_path = "assets";
-fs::path engine_path = ".";
-fs::path user_path   = "no-used";
+fs::path assets_path = "/home/el3tek/Projects/C-C++/an-engine/assets";
+fs::path engine_path = "/home/el3tek/Projects/C-C++/an-engine";
+fs::path user_path   = "/usr";
 
 bool set_engine_path(const std::string& path) {
     fs::path p(path);

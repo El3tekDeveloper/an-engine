@@ -25,6 +25,3 @@ private:
     friend class Scene;
 };
 
-#if __REFLECT_GENERATED__
-#include ".generated/behaviour.generated.hxx"
-#endif

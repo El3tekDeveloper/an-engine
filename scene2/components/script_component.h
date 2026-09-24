@@ -1,6 +1,6 @@
 #pragma once
 #include "resources/script.h"
-#include "component.h"
+#include "scene2/component.h"
 
 struct [[export]] ScriptComponent : public Component {
     std::unique_ptr<Script> instance;

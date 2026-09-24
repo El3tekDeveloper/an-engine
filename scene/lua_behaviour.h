@@ -35,6 +35,3 @@ private:
     void call_safely(sol::protected_function& fn, const char* hook_name);
 };
 
-#if __REFLECT_GENERATED__
-#include ".generated/lua_behaviour.generated.hxx"
-#endif

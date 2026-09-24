@@ -6,7 +6,7 @@
 #include "render/renderer.h"
 #include "scene/camera_component.h"
 #include "scene/component.h"
-#include "tools/reflector/type_registry.h"
+#include "tools/reflector/runtime/type_registry.h"
 #include <algorithm>
 #include <format>
 #include <memory>

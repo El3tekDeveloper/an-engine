@@ -1,8 +1,7 @@
 #pragma once
-#include "system.h"
+#include "scene2/system.h"
 #include "scene2/scene.h"
 #include "scene2/registry.h"
-#include "scene2/components/.generated/script_component.generated.hxx"
 
 class ScriptSystem : public System {
 public:

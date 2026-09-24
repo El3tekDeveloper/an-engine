@@ -1,6 +1,6 @@
 #pragma once
 #include "core/utils/demangle.h"
-#include "tools/reflector/type_registry.h"
+#include "tools/reflector/runtime/type_registry.h"
 #include <boost/pfr/core_name.hpp>
 #include <string>
 
@@ -17,6 +17,3 @@ public:
     }
 };
 
-#if __REFLECT_GENERATED__
-#include ".generated/component.generated.hxx"
-#endif

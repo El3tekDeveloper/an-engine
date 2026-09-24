@@ -1,6 +1,6 @@
 #pragma once
 #include "scene.h"
-#include "systems/system.h"
+#include "system.h"
 
 namespace ecs {
 

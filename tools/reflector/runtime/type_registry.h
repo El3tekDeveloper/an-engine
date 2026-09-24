@@ -7,6 +7,7 @@
 #include <format>
 #include <map>
 #include <string_view>
+#include <type_traits>
 #include <typeindex>
 #include <unordered_map>
 #include <vector>
@@ -222,6 +223,8 @@ protected:
     MetaMap m_meta;
 };
 
+template<typename T>
+struct has_reflection : std::false_type {};
 
 template<typename T>
 TypeClass* get_class_impl();
@@ -495,7 +498,15 @@ Type* get_type() {
     auto it = known_types().find(typeid(TypeT));
     if (it != known_types().end())
         return it->second;
- 
+
+    if constexpr (has_reflection<TypeT>::value) {
+        TypeClass* cls = get_class_impl<TypeT>();
+        if (cls) {
+            known_types().emplace(typeid(TypeT), cls);
+            return cls;
+        }
+    }
+
     LOG_ERROR("Type '{}' is not registered", type_name<TypeT>());
     return nullptr;
 }

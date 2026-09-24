@@ -1,5 +1,5 @@
 #pragma once
-#include "component.h"
+#include "scene2/component.h"
 #include "resources/mesh.h"
 
 struct [[export]] MeshRenderer : public Component {
@@ -37,6 +37,3 @@ private:
     friend class RenderSystem;
 };
 
-#if __REFLECT_GENERATED__
-#include ".generated/mesh_renderer.generated.hxx"
-#endif

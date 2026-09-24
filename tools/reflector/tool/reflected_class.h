@@ -1,50 +1,14 @@
 #pragma once
+#include "annotations.h"
 #include "generator_plugin.h"
 #include <clang/AST/ASTContext.h>
-#include <clang/AST/Attr.h>
-#include <clang/AST/Decl.h>
 #include <clang/AST/DeclCXX.h>
-#include <clang/ASTMatchers/ASTMatchFinder.h>
-#include <clang/Basic/AttrKinds.h>
-#include <clang/Basic/LLVM.h>
+#include <clang/AST/PrettyPrinter.h>
 #include <clang/Basic/SourceManager.h>
-#include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_ostream.h>
+#include <cctype>
 #include <string>
 #include <vector>
-#include <unordered_map>
-#include <cctype>
-
-using MatchFinder = clang::ast_matchers::MatchFinder;
-
-inline clang::Attr* find_annotation(clang::Decl* decl, llvm::StringRef prefix) {
-    for (clang::Attr* attr : decl->attrs()) {
-        auto* annotate = clang::dyn_cast<clang::AnnotateAttr>(attr);
-        if (annotate && annotate->getAnnotation().starts_with(prefix))
-            return attr;
-    }
-    return nullptr;
-}
-
-inline bool extract_range(clang::Decl* decl, std::string& out_min, std::string& out_max) {
-    clang::Attr* attr = find_annotation(decl, "reflect-range");
-    if (!attr) return false;
-
-    auto* annotate = clang::dyn_cast<clang::AnnotateAttr>(attr);
-    if (!annotate) return false;
-
-    llvm::StringRef full = annotate->getAnnotation();
-    auto semi = full.find(';');
-    if (semi == llvm::StringRef::npos) return false;
-
-    llvm::StringRef payload = full.substr(semi + 1);
-    auto comma = payload.find(',');
-    if (comma == llvm::StringRef::npos) return false;
-
-    out_min = payload.substr(0, comma).str();
-    out_max = payload.substr(comma + 1).str();
-    return true;
-}
 
 class ReflectedClass {
 public:
@@ -57,16 +21,12 @@ public:
     void add_field(const clang::FieldDecl*    f) { m_fields.push_back(f); }
     void add_function(const clang::FunctionDecl* f) { m_functions.push_back(f); }
 
-    void generate(clang::ASTContext* ctx, llvm::raw_ostream& os) const {
+    void generate(clang::ASTContext* ctx, llvm::raw_ostream& decls, llvm::raw_ostream& os) const {
         if (!m_record) return;
 
         const std::string type = m_record->getQualifiedNameAsString();
         const std::string type_safe = sanitize(type);
-        os << "// Generated reflection for: " << type << "\n";
-        os << "// DO NOT EDIT\n";
-        os << "#pragma once\n";
-        os << "#include \"tools/reflector/type_registry.h\"\n";
-        
+
         std::string include_root;
         if (ctx) {
             clang::SourceLocation loc = m_record->getLocation();
@@ -84,9 +44,12 @@ public:
                         break;
                     }
                 }
-                os << "#include \"" << rel.str() << "\"\n";
+                decls << "#include \"" << rel.str() << "\"\n";
             }
         }
+        decls << "template<> struct has_reflection<" << type << "> : std::true_type {};\n";
+
+        os << "// " << type << "\n";
 
         for (auto& plugin : GeneratorRegistry::instance().plugins())
             plugin->on_class_begin(m_record, {ctx, &os, type, type_safe, "", include_root});
@@ -129,7 +92,8 @@ public:
             os << "        f.name = _fname_" << fname << ";\n";
             os << "        f.offset = offsetof(" << type << ", " << fname << ");\n";
             os << "        f.type = get_type<"<< ftype <<">();\n";
-            os << "        f.type->set_name(_ftype_" << fname << ");\n";
+            os << "        if (f.type) f.type->set_name(_ftype_" << fname << ");\n";
+            os << "        else LOG_ERROR(\"reflect: field '" << fname << "' of " << type << " has unresolved type\");\n";
 
             for (auto& plugin : GeneratorRegistry::instance().plugins())
                 plugin->on_field(field, {ctx, &os, type, type_safe, "f", include_root});
@@ -234,116 +198,3 @@ private:
     }
 };
 
-class ClassFinder : public MatchFinder::MatchCallback {
-public:
-    ~ClassFinder() override = default;
-
-    void run(const MatchFinder::MatchResult& result) override {
-        m_context = result.Context;
-        m_source_manager = result.SourceManager;
-
-        if (auto* r = result.Nodes.getNodeAs<clang::CXXRecordDecl>("id"))
-            return found_record(r);
-        if (auto* f = result.Nodes.getNodeAs<clang::FieldDecl>("id"))
-            return found_field(f);
-        if (auto* f = result.Nodes.getNodeAs<clang::FunctionDecl>("id"))
-            return found_function(f);
-    }
-
-    void onEndOfTranslationUnit() override {
-        std::unordered_map<std::string, std::vector<ReflectedClass*>> by_file;
-        for (auto& cls : m_classes) {
-            by_file[cls.file_name()].push_back(&cls);
-        }
-
-        for (auto& [file_name, classes] : by_file) {
-            std::error_code ec;
-            llvm::raw_fd_ostream file(file_name, ec);
-            if (ec) {
-                llvm::errs() << "reflect: cannot open '" << file_name
-                             << "': " << ec.message() << "\n";
-                continue;
-            }
-            for (ReflectedClass* cls : classes) {
-                cls->generate(m_context, file);
-            }
-        }
-        m_classes.clear();
-    }
-
-private:
-    clang::ASTContext* m_context = nullptr;
-    clang::SourceManager* m_source_manager = nullptr;
-    std::vector<ReflectedClass> m_classes;
-
-    void found_record(const clang::CXXRecordDecl* r) {
-        std::string file_name = m_source_manager->getFilename(r->getLocation()).str();
-
-        size_t slash = file_name.find_last_of("/\\");
-        std::string directory = (slash == std::string::npos)
-            ? ""
-            : file_name.substr(0, slash);
-
-        std::string filename = (slash == std::string::npos)
-            ? file_name
-            : file_name.substr(slash + 1);
-
-        size_t dot = filename.rfind('.');
-        if (dot != std::string::npos)
-            filename.erase(dot);
-
-        std::error_code ec = llvm::sys::fs::create_directories(directory + "/.generated");
-        if (ec) {
-            llvm::errs() << "Failed to create directory: " << ec.message() << "\n";
-        }
-
-        file_name = directory + "/.generated/" + filename + ".generated.hxx";
-
-        m_classes.emplace_back(r, std::move(file_name));
-    }
-
-    void found_field(const clang::FieldDecl* f) {
-        if (!m_classes.empty())
-            m_classes.back().add_field(f);
-    }
-
-    void found_function(const clang::FunctionDecl* f) {
-        if (!m_classes.empty())
-            m_classes.back().add_function(f);
-    }
-};
-
-class RangePlugin : public GeneratorPlugin {
-public:
-    void on_field(const clang::FieldDecl* field, const GenContext& gc) override {
-        if (gc.scope_var.empty() || !field->getType()->isArithmeticType())
-            return;
- 
-        std::string range_min, range_max;
-        if (!extract_range(const_cast<clang::FieldDecl*>(field), range_min, range_max))
-            return;
-
-        *gc.os << "        " << gc.scope_var << ".meta[\"range_min\"] = static_cast<double>(" << range_min << ");\n";
-        *gc.os << "        " << gc.scope_var << ".meta[\"range_max\"] = static_cast<double>(" << range_max << ");\n";
-    }
-};
-REGISTER_GENERATOR(RangePlugin)
- 
-class ButtonPlugin : public GeneratorPlugin {
-public:
-    void on_function(const clang::FunctionDecl* func, const GenContext& gc) override {
-        if (gc.scope_var.empty())
-            return;
- 
-        bool is_button = func->getReturnType()->isVoidType()
-            && func->getNumParams() == 0
-            && find_annotation(const_cast<clang::FunctionDecl*>(func), "reflect-button") != nullptr;
- 
-        if (is_button)
-            *gc.os << "        " << gc.scope_var << ".meta[\"is_button\"] = true;\n";
-    }
-};
-REGISTER_GENERATOR(ButtonPlugin)
-
-inline ClassFinder class_finder;
-inline MatchFinder finder;

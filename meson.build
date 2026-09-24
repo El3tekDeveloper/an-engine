@@ -11,6 +11,7 @@ project(
 
 add_project_arguments(
     '-DENGINE_DEBUG_ENABLED=' + (get_option('debug') ? '1' : '0'),
+    '-DREFLECT_OUTPUT="' + meson.project_source_root() + '"',
     language: ['cpp', 'c']
 )
 
@@ -33,15 +34,34 @@ deps = [
     dependency('luajit'),
 ]
 
+reflect_command = custom_target(
+    'solution file',
+    output: 'project.sln.hxx',
+    input: src,
+    command: [
+        reflect_tool_exe,
+        '-p', meson.project_build_root(),
+        '-extra-arg=-resource-dir=' + run_command(
+            find_program('clang++'),
+            '-print-resource-dir',
+            check: true
+        ).stdout().strip(),
+        '@INPUT@',
+    ],
+    build_always_stale: true,
+    build_by_default: true,
+)
+
 executable(
     'an-engine',
     src + thirdparty_src,
+    reflect_command,
     include_directories: includes,
     dependencies: deps,
     cpp_args: [
-        '-fplugin=' + reflect_lib.full_path(),
+        #'-fplugin=' + reflect_lib.full_path(),
         '-D__REFLECT_GENERATED__',
     ],
-    link_depends: reflect_plugin_tgt,
+    #link_depends: reflect_plugin_tgt,
     install: false,
 )

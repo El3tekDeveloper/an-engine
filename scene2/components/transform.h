@@ -1,6 +1,6 @@
 #pragma once
 #include "core/math/quaternion.h"
-#include "component.h"
+#include "scene2/component.h"
 
 struct [[export]] Transform : public Component {
     [[export]] Vector3 position = Vector3::Zero;
@@ -20,6 +20,3 @@ private:
     friend class RenderSystem;
 };
 
-#if __REFLECT_GENERATED__
-#include ".generated/transform.generated.hxx"
-#endif 

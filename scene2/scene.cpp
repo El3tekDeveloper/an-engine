@@ -3,7 +3,7 @@
 #include "ecs.h"
 #include "registry.h"
 #include "game_object.h"
-#include "tools/reflector/type_registry.h"
+#include "tools/reflector/runtime/type_registry.h"
 #include <memory>
 #include <sstream>
 #include <vector>

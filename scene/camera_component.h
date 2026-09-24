@@ -1,6 +1,6 @@
 #pragma once
 #include "core/math/matrix4.h"
-#include "tools/reflector/type_registry.h"
+#include "tools/reflector/runtime/type_registry.h"
 #include "behaviour.h"
 #include "game_object.h"
 #include "render/renderer.h"
@@ -44,6 +44,3 @@ private:
     CameraData camera_data;
 };
 
-#if __REFLECT_GENERATED__
-#include ".generated/camera_component.generated.hxx"
-#endif

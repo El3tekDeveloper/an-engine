@@ -1,5 +1,5 @@
 #pragma once
-#include "scene2/components/component.h"
+#include "scene2/component.h"
 #include "resources/style_box.h"
 
 class [[export]] Panel : public Component {
@@ -10,6 +10,3 @@ public:
     StyleBox* style_box = nullptr;
 };
 
-#if __REFLECT_GENERATED__
-#include ".generated/panel.generated.hxx"
-#endif

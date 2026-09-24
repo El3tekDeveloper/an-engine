@@ -1,5 +1,5 @@
 #pragma once
-#include "component.h"
+#include "scene2/component.h"
 #include "resources/sprite.h"
 
 struct [[export]] SpriteRenderer : public Component {
@@ -15,6 +15,3 @@ struct [[export]] SpriteRenderer : public Component {
     [[export]] int layer = 0;
 };
 
-#if __REFLECT_GENERATED__
-#include ".generated/sprite_renderer.generated.hxx"
-#endif

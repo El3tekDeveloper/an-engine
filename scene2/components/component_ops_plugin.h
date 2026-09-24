@@ -1,6 +1,5 @@
 #pragma once
-#include "tools/reflector/generator_plugin.h"
-#include "tools/reflector/generator_plugin.h"
+#include "tools/reflector/tool/generator_plugin.h"
 #include <clang/AST/DeclCXX.h>
   
 namespace component_ops_detail {
