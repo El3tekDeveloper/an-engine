@@ -101,7 +101,10 @@ T& Scene::assign_component(Entity id, TArgs&&... args) {
 
     T* raw = new (component_pools[component_id]->get(entity::index(id)))
         T(std::forward<TArgs>(args)...);
-
+    
+    raw->owner = id;
+    raw->owner_scene = this;
+    
     entities[entity::index(id)].mask.set(component_id);
     return *raw;
 }

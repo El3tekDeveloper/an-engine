@@ -303,6 +303,9 @@ struct [[nodiscard]] Matrix4 {
         };
     }
 
+    Vector3 get_translation() const;
+    Vector3 get_scale() const;
+
     Vector3 transform_point(const Vector3& v) const;
     Vector3 transform_direction(const Vector3& v) const;
     Vector4 transform(const Vector4& v) const;
@@ -324,6 +327,30 @@ inline const Matrix4 Matrix4::Zero = {
 
 inline Matrix4 operator*(float s, const Matrix4& mat) {
     return mat * s;
+}
+
+inline Vector3 Matrix4::get_translation() const {
+    return {
+        m[0][3],
+        m[1][3],
+        m[2][3]
+    };
+}
+
+inline Vector3 Matrix4::get_scale() const {
+    return {
+        std::sqrt(m[0][0] * m[0][0] +
+                  m[1][0] * m[1][0] +
+                  m[2][0] * m[2][0]),
+
+        std::sqrt(m[0][1] * m[0][1] +
+                  m[1][1] * m[1][1] +
+                  m[2][1] * m[2][1]),
+
+        std::sqrt(m[0][2] * m[0][2] +
+                  m[1][2] * m[1][2] +
+                  m[2][2] * m[2][2])
+    };
 }
 
 inline Vector3 Matrix4::transform_point(const Vector3& v) const {

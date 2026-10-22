@@ -248,15 +248,15 @@ int main() {
 
     Window* window2 = app.create_window(WindowDesc{
         .title = "non (an-engine)",
-        .width = 1280,
-        .height = 720
+        .width = 640,
+        .height = 360
     });
     if (!window2) {
         LOG_ERROR("Window2 creation failed");
         return -1;
     }
     window2->on_close = [&app]() { app.quit(); };
-
+    
     ViewPort viewport2;
     viewport2.width = 640;
     viewport2.height = 360;
@@ -276,7 +276,7 @@ int main() {
     scene.add_system(std::make_unique<RenderSystem>());
 
     scene.initialize();
-    
+
     Entity camera = scene.create_entity();
     scene.assign_component<Transform>(camera);
     scene.assign_component<Camera>(camera);

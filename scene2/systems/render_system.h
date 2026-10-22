@@ -11,14 +11,6 @@
 #include <vector>
 #include "scene2/components/panel.h"
 
-inline Matrix4 get_world_matrix(Scene& scene, Entity id) {
-    Matrix4 local = scene.get_component<Transform>(id).get_local_matrix();
-    Entity parent = scene.get_parent(id);
-    if (!entity::is_valid(parent) || !scene.get_registry().has<Transform>(parent))
-        return local;
-    return get_world_matrix(scene, parent) * local;
-}
-
 class RenderSystem : public System {
 public:
     virtual ~RenderSystem() = default;
@@ -33,7 +25,7 @@ public:
             active_camera = &scene.get_component<Camera>(entity);
             camera_transform = &scene.get_component<Transform>(entity);
 
-            Matrix4 view = get_world_matrix(scene, entity).inversed();
+            Matrix4 view = camera_transform->get_world_matrix().inversed();
             
             Matrix4 projection;
             if (active_camera->type == CameraType::Orthographic) {
@@ -73,25 +65,25 @@ public:
 
         for (auto entity : scene.get_registry().view<Transform, MeshRenderer>()) {
             Transform& transform = scene.get_component<Transform>(entity);
-            MeshRenderer& mesh_renderer = scene.get_component<MeshRenderer>(entity);
+            MeshRenderer& renderer = scene.get_component<MeshRenderer>(entity);
 
             if (camera_transform) {
                 Vector3 to_object = transform.position - camera_transform->position;
                 float max_scale = std::max({ transform.scale.x, transform.scale.y, transform.scale.z });
-                float radius = mesh_renderer.mesh->bounding_radius * max_scale;
+                float radius = renderer.mesh->bounding_radius * max_scale;
                 float reach = far_plane_sq + radius * radius;
                 if (to_object.dot(to_object) > reach) continue;
             }
 
-            if (!(mesh_renderer.is_static && mesh_renderer.cache_valid)) {
-                mesh_renderer.cached_matrix = get_world_matrix(scene, entity);
-                mesh_renderer.cache_valid = true;
+            if (!(renderer.is_static && renderer.cache_valid)) {
+                renderer.cached_matrix = transform.get_world_matrix();
+                renderer.cache_valid = true;
             }
 
             rd.mesh_instances.push_back(MeshInstance{
-                mesh_renderer.mesh,
-                mesh_renderer.cached_matrix,
-                mesh_renderer.materials
+                renderer.mesh,
+                renderer.cached_matrix,
+                renderer.materials
             });
         }
         last_instance_count = rd.mesh_instances.size();
@@ -100,17 +92,18 @@ public:
         rd.sprite_instances.reserve(last_sprite_count);
 
         for (auto entity : scene.get_registry().view<Transform, SpriteRenderer>()) {
-            SpriteRenderer& sprite_renderer = scene.get_component<SpriteRenderer>(entity);
+            SpriteRenderer& renderer = scene.get_component<SpriteRenderer>(entity);
+            Transform& transform = scene.get_component<Transform>(entity);
 
-            if (!sprite_renderer.sprite) continue;
+            if (!renderer.sprite) continue;
 
             rd.sprite_instances.push_back(SpriteInstance{
-                sprite_renderer.sprite,
-                get_world_matrix(scene, entity),
-                sprite_renderer.color,
-                sprite_renderer.flip_x,
-                sprite_renderer.flip_y,
-                sprite_renderer.layer
+                renderer.sprite,
+                transform.get_world_matrix(),
+                renderer.color,
+                renderer.flip_x,
+                renderer.flip_y,
+                renderer.layer
             });
         }
         last_sprite_count = rd.sprite_instances.size();
@@ -120,20 +113,21 @@ public:
 
         for (auto entity : scene.get_registry().view<Transform, Panel>()) {
             Panel& panel = scene.get_component<Panel>(entity);
-
+            Transform& transform = scene.get_component<Transform>(entity);
+            
             if (!panel.style_box) continue;
 
             rd.panel_instances.push_back(PanelInstance{
                 panel.style_box,
-                get_world_matrix(scene, entity)
+                transform.get_world_matrix()
             });
         }
         last_panel_count = rd.panel_instances.size();
     };
 
-    size_t last_panel_count = 0;
 private:
     size_t last_instance_count = 0;
     size_t last_sprite_count = 0;
+    size_t last_panel_count = 0;
 };
 
