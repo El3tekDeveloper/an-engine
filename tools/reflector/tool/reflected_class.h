@@ -1,6 +1,7 @@
 #pragma once
 #include "annotations.h"
 #include "generator_plugin.h"
+#include "registry_file.h"
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/DeclCXX.h>
 #include <clang/AST/PrettyPrinter.h>
@@ -27,26 +28,8 @@ public:
         const std::string type = m_record->getQualifiedNameAsString();
         const std::string type_safe = sanitize(type);
 
-        std::string include_root;
-        if (ctx) {
-            clang::SourceLocation loc = m_record->getLocation();
-            clang::SourceManager& sm  = ctx->getSourceManager();
-            loc = sm.getFileLoc(loc);
-            if (loc.isValid()) {
-                llvm::StringRef filePath = sm.getFilename(loc);
-                static constexpr llvm::StringLiteral kMarkers[] = { "./" };
-                llvm::StringRef rel = filePath;
-                for (auto marker : kMarkers) {
-                    auto pos = filePath.find(marker);
-                    if (pos != llvm::StringRef::npos) {
-                        rel = filePath.substr(pos);
-                        include_root = filePath.substr(0, pos).str();
-                        break;
-                    }
-                }
-                decls << "#include \"" << rel.str() << "\"\n";
-            }
-        }
+        const std::string include_root = registry_file::root;
+        decls << "#include \"" << m_file_name << "\"\n";
         decls << "template<> struct has_reflection<" << type << "> : std::true_type {};\n";
 
         os << "// " << type << "\n";

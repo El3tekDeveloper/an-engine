@@ -7,7 +7,7 @@ public:
     void on_field(const clang::FieldDecl* field, const GenContext& gc) override {
         if (gc.scope_var.empty() || !field->getType()->isArithmeticType())
             return;
- 
+        
         std::string range_min, range_max;
         if (!extract_range(const_cast<clang::FieldDecl*>(field), range_min, range_max))
             return;

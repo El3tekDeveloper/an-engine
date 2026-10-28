@@ -52,23 +52,31 @@ private:
     clang::SourceManager* m_source_manager = nullptr;
     std::vector<ReflectedClass> m_classes;
 
+    bool m_in_root_class = false;
+
     void found_record(const clang::CXXRecordDecl* r) {
-        std::string file_name = m_source_manager->getFilename(r->getLocation()).str();
+        clang::SourceLocation loc = m_source_manager->getFileLoc(r->getLocation());
+        std::string file_name = registry_file::canonical(m_source_manager->getFilename(loc).str());
+        std::string relative = registry_file::relative_to_root(file_name);
 
-        llvm::SmallString<256> canonical(file_name);
-        if (!llvm::sys::fs::real_path(file_name, canonical, /*expand_tilde=*/true))
-            file_name = canonical.str().str();
-
-        m_classes.emplace_back(r, std::move(file_name));
+        m_in_root_class = !relative.empty();
+        if (m_in_root_class && !llvm::StringRef(relative).ends_with(".h")
+                && !llvm::StringRef(relative).ends_with(".hpp")) {
+            llvm::errs() << "reflect: skipping '" << r->getQualifiedNameAsString()
+                         << "', reflected classes must be declared in a header (" << relative << ")\n";
+            m_in_root_class = false;
+        }
+        if (m_in_root_class)
+            m_classes.emplace_back(r, std::move(relative));
     }
 
     void found_field(const clang::FieldDecl* f) {
-        if (!m_classes.empty())
+        if (m_in_root_class && !m_classes.empty())
             m_classes.back().add_field(f);
     }
 
     void found_function(const clang::FunctionDecl* f) {
-        if (!m_classes.empty())
+        if (m_in_root_class && !m_classes.empty())
             m_classes.back().add_function(f);
     }
 };

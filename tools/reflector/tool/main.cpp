@@ -19,6 +19,16 @@ namespace {
 
 llvm::cl::OptionCategory ReflectToolCategory("reflect-tool options");
 
+llvm::cl::opt<std::string> OutputOption(
+    "output",
+    llvm::cl::desc("Generated registry file (default: <root>/project.sln.hxx)"),
+    llvm::cl::cat(ReflectToolCategory));
+
+llvm::cl::opt<std::string> RootOption(
+    "root",
+    llvm::cl::desc("Only reflect classes declared under this folder (default: engine root)"),
+    llvm::cl::cat(ReflectToolCategory));
+
 void register_matchers(MatchFinder& finder, ClassFinder& class_finder) {
     finder.addMatcher(
         cxxRecordDecl(hasAttr(attr::Annotate), isDefinition()).bind("id"),
@@ -40,6 +50,9 @@ int main(int argc, const char** argv) {
         return 1;
     }
     CommonOptionsParser& options_parser = expected_parser.get();
+
+    registry_file::init(OutputOption, RootOption);
+    registry_file::ensure_exists();
 
     ClangTool tool(options_parser.getCompilations(), options_parser.getSourcePathList());
     

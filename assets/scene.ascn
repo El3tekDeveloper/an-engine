@@ -14,8 +14,8 @@
 
 [entity id="4294967296"]
 - [component type_name="Transform"]
-  - position = [0,-0.029301165,0]
-  - rotation = [0,0,-0.14440508,0.98951864]
+  - position = [0,-0.42298144,0]
+  - rotation = [0,0,-0.4260946,0.90467864]
   - scale = [1,1,1]
 - [component type_name="ScriptComponent"]
 - [component type_name="SpriteRenderer"]

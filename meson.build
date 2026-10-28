@@ -34,18 +34,24 @@ deps = [
     dependency('luajit'),
 ]
 
+reflect_args = [
+    '-p', meson.global_build_root(),
+    '-extra-arg=-resource-dir=' + run_command(
+        find_program('clang++'),
+        '-print-resource-dir',
+        check: true
+    ).stdout().strip(),
+]
+
 reflect_command = custom_target(
     'solution file',
     output: 'project.sln.hxx',
     input: src,
     command: [
         reflect_tool_exe,
-        '-p', meson.project_build_root(),
-        '-extra-arg=-resource-dir=' + run_command(
-            find_program('clang++'),
-            '-print-resource-dir',
-            check: true
-        ).stdout().strip(),
+        reflect_args,
+        '--root', meson.current_source_dir(),
+        '--output', meson.current_source_dir() / 'project.sln.hxx',
         '@INPUT@',
     ],
     build_always_stale: true,

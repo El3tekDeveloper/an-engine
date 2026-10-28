@@ -15,11 +15,36 @@ constexpr const char* file_name = "project.sln.hxx";
 constexpr const char* begin_mark    = "// @@BEGIN ";
 constexpr const char* end_mark      = "// @@END";
 
+inline std::string output = "";
+inline std::string root   = "";
+
+inline std::string canonical(const std::string& path) {
+    llvm::SmallString<256> real;
+    if (llvm::sys::fs::real_path(path, real, /*expand_tilde=*/true))
+        return path;
+    return real.str().str();
+}
+
+inline void init(const std::string& output_opt, const std::string& root_opt) {
+    root = canonical(root_opt.empty() ? std::string(REFLECT_OUTPUT) : root_opt);
+    if (!output_opt.empty()) {
+        output = output_opt;
+    } else {
+        llvm::SmallString<256> p(root);
+        llvm::sys::path::append(p, file_name);
+        output = p.str().str();
+    }
+}
+
 inline std::string output_path() {
-    llvm::SmallString<256> p;
-    p = REFLECT_OUTPUT;
-    llvm::sys::path::append(p, file_name);
-    return p.str().str();
+    return output;
+}
+
+inline std::string relative_to_root(const std::string& file) {
+    llvm::StringRef f(file);
+    if (!f.consume_front(root) || !(f.empty() || llvm::sys::path::is_separator(f.front())))
+        return {};
+    return llvm::sys::path::convert_to_slash(f.ltrim("/\\"));
 }
 
 inline std::string read_all(const std::string& path) {
@@ -69,8 +94,18 @@ inline std::string render(const std::map<std::string, std::string>& blocks) {
     return out;
 }
 
+inline void ensure_exists() {
+    const std::string path = output_path();
+    if (llvm::sys::fs::exists(path)) return;
+    std::error_code ec;
+    llvm::raw_fd_ostream out(path, ec);
+    if (ec)
+        llvm::errs() << "reflect: cannot create '" << path << "': " << ec.message() << "\n";
+    else
+        out << render({});
+}
+
 inline void update(const std::map<std::string, std::string>& updates) {
-    if (updates.empty()) return;
 
     const std::string path = output_path();
 
@@ -85,6 +120,16 @@ inline void update(const std::map<std::string, std::string>& updates) {
 
     const std::string existing = read_all(path);
     auto blocks = parse(existing);
+
+    for (auto it = blocks.begin(); it != blocks.end();) {
+        llvm::StringRef header = llvm::StringRef(it->first).drop_front(2);
+        llvm::SmallString<256> full(root);
+        llvm::sys::path::append(full, header);
+        if (llvm::sys::path::is_absolute(header) || !llvm::sys::fs::exists(full))
+            it = blocks.erase(it);
+        else
+            ++it;
+    }
     for (const auto& [key, body] : updates)
         blocks[key] = body;
 

@@ -3,54 +3,54 @@
 #pragma once
 #include "tools/reflector/runtime/type_registry.h"
 
-// @@BEGIN 0//home/el3tek/Projects/C-C++/an-engine/resources/style_box.h
-#include "./resources/style_box.h"
+// @@BEGIN 0/resources/style_box.h
+#include "resources/style_box.h"
 template<> struct has_reflection<StyleBox> : std::true_type {};
 // @@END
 
-// @@BEGIN 0//home/el3tek/Projects/C-C++/an-engine/scene2/component.h
-#include "./scene2/component.h"
+// @@BEGIN 0/scene2/component.h
+#include "scene2/component.h"
 template<> struct has_reflection<Component> : std::true_type {};
 // @@END
 
-// @@BEGIN 0//home/el3tek/Projects/C-C++/an-engine/scene2/components/camera.h
-#include "./scene2/components/camera.h"
+// @@BEGIN 0/scene2/components/camera.h
+#include "scene2/components/camera.h"
 template<> struct has_reflection<Camera> : std::true_type {};
 // @@END
 
-// @@BEGIN 0//home/el3tek/Projects/C-C++/an-engine/scene2/components/mesh_renderer.h
-#include "./scene2/components/mesh_renderer.h"
+// @@BEGIN 0/scene2/components/mesh_renderer.h
+#include "scene2/components/mesh_renderer.h"
 template<> struct has_reflection<MeshRenderer> : std::true_type {};
 // @@END
 
-// @@BEGIN 0//home/el3tek/Projects/C-C++/an-engine/scene2/components/panel.h
-#include "./scene2/components/panel.h"
+// @@BEGIN 0/scene2/components/panel.h
+#include "scene2/components/panel.h"
 template<> struct has_reflection<Panel> : std::true_type {};
 // @@END
 
-// @@BEGIN 0//home/el3tek/Projects/C-C++/an-engine/scene2/components/script_component.h
-#include "./scene2/components/script_component.h"
+// @@BEGIN 0/scene2/components/script_component.h
+#include "scene2/components/script_component.h"
 template<> struct has_reflection<ScriptComponent> : std::true_type {};
 // @@END
 
-// @@BEGIN 0//home/el3tek/Projects/C-C++/an-engine/scene2/components/sprite_renderer.h
-#include "./scene2/components/sprite_renderer.h"
+// @@BEGIN 0/scene2/components/sprite_renderer.h
+#include "scene2/components/sprite_renderer.h"
 template<> struct has_reflection<SpriteRenderer> : std::true_type {};
 // @@END
 
-// @@BEGIN 0//home/el3tek/Projects/C-C++/an-engine/scene2/components/transform.h
-#include "./scene2/components/transform.h"
+// @@BEGIN 0/scene2/components/transform.h
+#include "scene2/components/transform.h"
 template<> struct has_reflection<Transform> : std::true_type {};
 // @@END
 
-// @@BEGIN 0//home/el3tek/Projects/C-C++/an-engine/scene2/systems/physics_system.h
-#include "./scene2/systems/physics_system.h"
+// @@BEGIN 0/scene2/systems/physics_system.h
+#include "scene2/systems/physics_system.h"
 template<> struct has_reflection<AABB> : std::true_type {};
-#include "./scene2/systems/physics_system.h"
+#include "scene2/systems/physics_system.h"
 template<> struct has_reflection<RigidBody> : std::true_type {};
 // @@END
 
-// @@BEGIN 1//home/el3tek/Projects/C-C++/an-engine/resources/style_box.h
+// @@BEGIN 1/resources/style_box.h
 // StyleBox
 
 template<>
@@ -136,7 +136,7 @@ namespace {
 
 // @@END
 
-// @@BEGIN 1//home/el3tek/Projects/C-C++/an-engine/scene2/component.h
+// @@BEGIN 1/scene2/component.h
 // Component
 
 template<>
@@ -176,7 +176,7 @@ namespace {
 
 // @@END
 
-// @@BEGIN 1//home/el3tek/Projects/C-C++/an-engine/scene2/components/camera.h
+// @@BEGIN 1/scene2/components/camera.h
 // Camera
 #include "scene2/components/component_ops.h"
 
@@ -286,7 +286,7 @@ namespace {
 
 // @@END
 
-// @@BEGIN 1//home/el3tek/Projects/C-C++/an-engine/scene2/components/mesh_renderer.h
+// @@BEGIN 1/scene2/components/mesh_renderer.h
 // MeshRenderer
 #include "scene2/components/component_ops.h"
 
@@ -442,7 +442,7 @@ namespace {
 
 // @@END
 
-// @@BEGIN 1//home/el3tek/Projects/C-C++/an-engine/scene2/components/panel.h
+// @@BEGIN 1/scene2/components/panel.h
 // Panel
 #include "scene2/components/component_ops.h"
 
@@ -489,7 +489,7 @@ namespace {
 
 // @@END
 
-// @@BEGIN 1//home/el3tek/Projects/C-C++/an-engine/scene2/components/script_component.h
+// @@BEGIN 1/scene2/components/script_component.h
 // ScriptComponent
 #include "scene2/components/component_ops.h"
 
@@ -536,7 +536,7 @@ namespace {
 
 // @@END
 
-// @@BEGIN 1//home/el3tek/Projects/C-C++/an-engine/scene2/components/sprite_renderer.h
+// @@BEGIN 1/scene2/components/sprite_renderer.h
 // SpriteRenderer
 #include "scene2/components/component_ops.h"
 
@@ -638,7 +638,7 @@ namespace {
 
 // @@END
 
-// @@BEGIN 1//home/el3tek/Projects/C-C++/an-engine/scene2/components/transform.h
+// @@BEGIN 1/scene2/components/transform.h
 // Transform
 #include "scene2/components/component_ops.h"
 
@@ -718,7 +718,7 @@ namespace {
 
 // @@END
 
-// @@BEGIN 1//home/el3tek/Projects/C-C++/an-engine/scene2/systems/physics_system.h
+// @@BEGIN 1/scene2/systems/physics_system.h
 // AABB
 #include "scene2/components/component_ops.h"
 
