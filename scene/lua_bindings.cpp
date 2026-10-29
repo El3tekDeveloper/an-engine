@@ -73,13 +73,13 @@ static void field_set(void* base, const Field& f, sol::object v) {
 void register_lua_bindings(sol::state& lua) {
     sol::table time_table = lua.create_table();
     time_table.set_function("delta_time", []() {
-        return Time.delta_time();
+        return Time.delta_time;
     });
     time_table.set_function("unscaled_delta_time", []() {
         return Time.unscaled_delta_time();
     });
     time_table.set_function("time", []() {
-        return Time.time();
+        return Time.time;
     });
     time_table.set_function("real_time", []() {
         return Time.real_time();

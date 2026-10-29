@@ -124,7 +124,7 @@ private:
 
     void update_playing(Scene& scene, ecs::Registry& registry, GameStateComponent& game_state,
                          Player& player, Transform& player_transform) {
-        game_state.pipe_spawn_timer += Time.delta_time();
+        game_state.pipe_spawn_timer += Time.delta_time;
         if (game_state.pipe_spawn_timer >= PIPE_SPAWN_EVERY) {
             game_state.pipe_spawn_timer = 0.0f;
             spawn_pipe_pair(scene);
@@ -137,7 +137,7 @@ private:
             Transform& pipe_transform = registry.get<Transform>(e);
             Pipe& pipe = registry.get<Pipe>(e);
 
-            pipe_transform.position.x -= PIPE_SPEED * Time.delta_time();
+            pipe_transform.position.x -= PIPE_SPEED * Time.delta_time;
 
             if (pipe.is_top && !pipe.scored && pipe_transform.position.x < player_transform.position.x) {
                 pipe.scored = true;

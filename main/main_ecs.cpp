@@ -161,10 +161,10 @@ int main() {
             if (movement.length_squared() > 0.0f)
                 movement.normalize();
 
-            camera_transform.position += movement * camera_speed * Time.delta_time();
+            camera_transform.position += movement * camera_speed * Time.delta_time;
         }
 
-        spawn_timer += Time.delta_time();
+        spawn_timer += Time.delta_time;
         if (spawn_timer >= spawn_interval) {
             spawn_timer = 0.0f;
             spawn_cube(get_random_point_in_box(box_center, box_extents));

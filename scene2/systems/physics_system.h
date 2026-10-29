@@ -117,7 +117,7 @@ public:
     float broadphase_cell_size = 2.0f;
 
     void update(Scene& scene) override {
-        float dt = Time.delta_time() / (float)substeps;
+        float dt = Time.delta_time / (float)substeps;
         
         cached_entities_.clear();
         for (auto entity : scene.get_registry().view<Transform, RigidBody, AABB>()) {

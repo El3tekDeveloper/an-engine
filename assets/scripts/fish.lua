@@ -22,7 +22,7 @@ function sprite_x_animation(rect, animation_time, frame_size, frames_count, spee
         rect.x = start_x
     end
 
-    animation_time = animation_time + Time.delta_time()
+    animation_time = animation_time + Time.delta_time
 
     if animation_time >= speed then
         animation_time = 0.0
@@ -47,8 +47,8 @@ function awake()
 end
 
 function update()
-    cooldown_timer = cooldown_timer + Time.delta_time();
-    current_velocity = current_velocity + (gravity * Time.delta_time());
+    cooldown_timer = cooldown_timer + Time.delta_time;
+    current_velocity = current_velocity + (gravity * Time.delta_time);
 
     local jump_pressed = Input.is_mouse_button_just_pressed(MouseButton.Left) or Input.is_key_just_pressed(Key.Space)
     if jump_pressed and cooldown_timer >= cooldown_interval then
@@ -56,7 +56,7 @@ function update()
         cooldown_timer = 0.0
     end
 
-    transform.position.y = transform.position.y + current_velocity * Time.delta_time()
+    transform.position.y = transform.position.y + current_velocity * Time.delta_time
     transform.rotation.euler.y = current_velocity * 3
 
     if current_velocity > 0 then

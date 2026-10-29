@@ -72,18 +72,18 @@ int main() {
         Time.update();
         scene.update();
         
-        angle += speed * Time.delta_time();
+        angle += speed * Time.delta_time;
         float x = cosf(angle);
         float z = sinf(angle);
         float y = sinf(x * z);
 
         earth.transform.position = Vector3(x * 4.0f, 0, z * 4.0f);
-        earth.transform.rotation *= Quaternion::from_axis_angle({1, 1, 1}, 2.0f * Time.delta_time());
+        earth.transform.rotation *= Quaternion::from_axis_angle({1, 1, 1}, 2.0f * Time.delta_time);
 
         moon.transform.position = earth.transform.position + Vector3(x * 1.0f, y * 1.0f, z * 1.0f);
-        moon.transform.rotation *= Quaternion::from_axis_angle({1, 1, 1}, 2.0f * Time.delta_time());
+        moon.transform.rotation *= Quaternion::from_axis_angle({1, 1, 1}, 2.0f * Time.delta_time);
         
-        sun.transform.rotation *= Quaternion::from_axis_angle({1, 1, 1}, 0.8f * Time.delta_time());
+        sun.transform.rotation *= Quaternion::from_axis_angle({1, 1, 1}, 0.8f * Time.delta_time);
 
         scene.draw(render_data);
         renderer.render(render_data);

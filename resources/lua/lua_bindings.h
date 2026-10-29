@@ -94,30 +94,33 @@ void register_enum_automatically(sol::state& lua, const std::string& lua_name) {
 }
 
 static inline void register_lua_bindings(sol::state& lua, Scene& scene) {
-    sol::table time_table = lua.create_table();
-    time_table.set_function("delta_time", []() {
-        return Time.delta_time();
-    });
-    time_table.set_function("unscaled_delta_time", []() {
-        return Time.unscaled_delta_time();
-    });
-    time_table.set_function("time", []() {
-        return Time.time();
-    });
-    time_table.set_function("real_time", []() {
-        return Time.real_time();
-    });
-    time_table.set_function("frame_count", []() {
-        return Time.frame_count();
-    });
+    struct TimeProxy {};
+    lua.new_usertype<TimeProxy>("TimeType",
+        sol::no_constructor,
 
-    time_table.set_function("get_time_scale", []() {
-        return Time.time_scale;
-    });
-    time_table.set_function("set_time_scale", [](float value) {
-        Time.time_scale = value;
-    });
-    lua["Time"] = time_table;
+        "delta_time", sol::readonly_property([](const TimeProxy&) {
+            return Time.delta_time;
+        }),
+        "unscaled_delta_time", sol::readonly_property([](const TimeProxy&) {
+            return Time.unscaled_delta_time;
+        }),
+        "time", sol::readonly_property([](const TimeProxy&) {
+            return Time.time;
+        }),
+        "real_time", sol::readonly_property([](const TimeProxy&) {
+            return Time.real_time;
+        }),
+
+        "time_scale", sol::property(
+            [](const TimeProxy&) { return Time.time_scale; },
+            [](TimeProxy&, float value) { Time.time_scale = value; }
+        ),
+
+        "frame_count", [](const TimeProxy&) {
+            return Time.frame_count();
+        }
+    );
+    lua["Time"] = TimeProxy{};
 
     sol::table resource_manager_table = lua.create_table();
     resource_manager_table.set_function("get_texture", [](const std::string& path) {

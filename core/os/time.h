@@ -9,7 +9,7 @@
 class TimeSystem {
 public:
     TimeSystem() {
-        _real_time = std::chrono::duration<double>(
+        real_time = std::chrono::duration<double>(
             std::chrono::steady_clock::now().time_since_epoch()
         ).count();
     }
@@ -19,15 +19,16 @@ public:
         static TimeSystem instance;
         return instance;
     }
+    
+    double delta_time = 0.0f;
+    double unscaled_delta_time = 0.0f;
+    double real_time = 0.0f;
 
-    double delta_time() { return _delta_time; }
-    double unscaled_delta_time() { return _unscaled_delta_time; }
-    double real_time() { return _real_time; }
-    double time() { return _time; }
-
-    uint32_t frame_count() { return _frame_count; }
+    double time = 0.0f;
     float time_scale = 1.0f;
-
+    
+    uint32_t frame_count() { return _frame_count; }
+    
     void update() {
         auto now = std::chrono::steady_clock::now();
 
@@ -36,11 +37,11 @@ public:
                     now.time_since_epoch()
                     ).count();
 
-        _unscaled_delta_time = current - _real_time;
-        _delta_time = _unscaled_delta_time * time_scale;
+        unscaled_delta_time = current - real_time;
+        delta_time = unscaled_delta_time * time_scale;
 
-        _real_time = current;
-        _time += _delta_time;
+        real_time = current;
+        time += delta_time;
 
         _frame_count++;
     }
@@ -54,11 +55,6 @@ public:
     }
 
 private:
-    double _delta_time = 0.0f;
-    double _unscaled_delta_time = 0.0f;
-    double _real_time = 0.0f;
-    double _time = 0.0f;
-    
     uint32_t _frame_count = 0;
 };
 

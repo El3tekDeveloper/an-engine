@@ -275,15 +275,15 @@ int main() {
         scene.update();
 
         if (Input.is_key_pressed(Key::W)) {
-            car.transform().position.z += 30 * Time.delta_time();
+            car.transform().position.z += 30 * Time.delta_time;
         } else if (Input.is_key_pressed(Key::S)) {
-            car.transform().position.z -= 30 * Time.delta_time();
+            car.transform().position.z -= 30 * Time.delta_time;
         }
 
         if (Input.is_key_pressed(Key::D)) {
-            car.transform().rotation.euler.x += 30 * Time.delta_time();
+            car.transform().rotation.euler.x += 30 * Time.delta_time;
         } else if (Input.is_key_pressed(Key::A)) {
-            car.transform().rotation.euler.x -= 30 * Time.delta_time();
+            car.transform().rotation.euler.x -= 30 * Time.delta_time;
         }
         
         window->make_current();
