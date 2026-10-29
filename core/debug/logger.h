@@ -8,6 +8,7 @@
 #include <fmt/format.h>
 #include <cstdio>
 #include <tuple>
+#include <arpa/inet.h>
 
 namespace Logger {
     enum LogLevel {
@@ -22,8 +23,15 @@ namespace Logger {
     namespace detail {
         template<typename T>
         decltype(auto) make_printable(T&& val) {
-            using Base = std::remove_cv_t<std::remove_pointer_t<std::remove_reference_t<T>>>;
-            if constexpr (std::is_pointer_v<std::remove_reference_t<T>> && !std::is_same_v<Base, char>)
+            using Raw  = std::remove_cv_t<std::remove_reference_t<T>>;
+            using Base = std::remove_cv_t<std::remove_pointer_t<Raw>>;
+
+            if constexpr (std::is_same_v<Raw, in6_addr>) {
+                char buf[INET6_ADDRSTRLEN];
+                const char* s = inet_ntop(AF_INET6, &val, buf, sizeof(buf));
+                return std::string(s ? s : "<invalid>");
+            }
+            else if constexpr (std::is_pointer_v<Raw> && !std::is_same_v<Base, char>)
                 return static_cast<const void*>(val);
             else
                 return std::forward<T>(val);
