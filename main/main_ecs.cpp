@@ -49,7 +49,7 @@ void spawn_cube(const Vector3& position) {
     rb.restitution = 0.2f;
     AABB& aabb = cube.add_component<AABB>();
     aabb.half_extents = Vector3::One * 0.5f;
-    cube.transform().position = position;
+    cube.transform.position = position;
 }
 
 int main() {

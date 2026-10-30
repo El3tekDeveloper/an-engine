@@ -350,8 +350,9 @@ static inline void register_lua_bindings(sol::state& lua, Scene& scene) {
     );
 
     lua.new_usertype<GameObject>("GameObject",
-        sol::constructors<GameObject()>(),
-        "transform", sol::property([](GameObject& go) -> Transform& { return go.transform(); }),
+        sol::constructors<GameObject(Entity, Scene*)>(),
+        "id", &GameObject::id,
+        "transform", sol::readonly_property([](GameObject& go) -> Transform& { return go.transform; }),
 
         "add_component", [](GameObject& go, TypeClass* tc) -> Component* {
             if (!tc) {

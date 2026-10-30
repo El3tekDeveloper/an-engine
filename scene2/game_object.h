@@ -6,8 +6,11 @@
 using namespace ecs;
 
 struct GameObject {
+    GameObject(Entity id, Scene* scene) : id(id), scene(scene), transform(scene->get_component<Transform>(id)) {}
+
     Entity id;
     Scene* scene;
+    Transform& transform;
     
     inline void destroy() {
         scene->destroy(id);
@@ -31,10 +34,6 @@ struct GameObject {
     template<typename T, typename... Args>
     inline Script& add_script(Args&&... args) {
         return scene->add_script<T>(id, std::forward<Args>(args)...);
-    }
-
-    inline Transform& transform() const {
-        return scene->get_component<Transform>(id);
     }
 
     inline void set_parent(GameObject parent) const {

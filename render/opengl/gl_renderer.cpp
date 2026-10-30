@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <string>
 #include <stb_image.h>
+#include "render/gizmo.h"
 
 struct GLContext {
     std::unordered_map<SDL_GLContext, GLuint> vaos;
@@ -33,6 +34,14 @@ struct GLContext {
     GLint sprite_uv_rect_loc;
     GLint sprite_transform_loc;
     GLint sprite_tint_loc;
+
+    GLuint gizmo_program_id;
+    GLint gizmo_camera_loc;
+    GLint gizmo_rect_loc;
+    GLint gizmo_line_thickness_loc;
+    GLint gizmo_circle_segments_loc;
+    GLint gizmo_color_loc;
+    GLint gizmo_type_loc;
     
     GLuint stylebox_program_id;
     GLint stylebox_screen_loc;
@@ -51,13 +60,13 @@ static GLuint get_vao_for_current_context() {
     GLuint vao;
     glGenVertexArrays(1, &vao);
     context.vaos[current] = vao;
-
+    
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_FRAMEBUFFER_SRGB);
     glEnable(GL_MULTISAMPLE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+    
     return vao;
 }
 
@@ -115,6 +124,14 @@ bool Renderer::init(BumpAllocator* transient_storage) {
     context.stylebox_screen_loc = glGetUniformLocation(context.stylebox_program_id, "u_screen_size");
     context.stylebox_transform_loc = glGetUniformLocation(context.stylebox_program_id, "u_box_transform");
 
+    context.gizmo_program_id = create_program("gizmo.vert", "gizmo.frag", {}, *transient_storage);
+    context.gizmo_camera_loc = glGetUniformLocation(context.gizmo_program_id, "u_camera");
+    context.gizmo_rect_loc = glGetUniformLocation(context.gizmo_program_id, "u_rect");
+    context.gizmo_line_thickness_loc = glGetUniformLocation(context.gizmo_program_id, "u_line_thickness");
+    context.gizmo_circle_segments_loc = glGetUniformLocation(context.gizmo_program_id, "u_circle_segments");
+    context.gizmo_color_loc = glGetUniformLocation(context.gizmo_program_id, "u_color");
+    context.gizmo_type_loc = glGetUniformLocation(context.gizmo_program_id, "u_type");
+
     glGenBuffers(1, &context.stylebox_ssbo_id);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, context.stylebox_ssbo_id);
     glBufferData(GL_SHADER_STORAGE_BUFFER, StyleBox::gpu_size(), nullptr, GL_DYNAMIC_DRAW);
@@ -144,7 +161,7 @@ void Renderer::render(ViewPort& viewport, RenderData& render_data) {
     glUseProgram(context.mesh_program_id);
 
     glUniformMatrix4fv(context.camera_loc, 1, GL_TRUE, render_data.camera->matrix.data());
-
+    
     const Mesh* last_uploaded_mesh = nullptr;
 
     for (MeshInstance& instance : render_data.mesh_instances) {
@@ -196,7 +213,6 @@ void Renderer::render(ViewPort& viewport, RenderData& render_data) {
             glDrawArrays(GL_TRIANGLES, 0, sub.index_count);
         }
     }
-
 
     if (!render_data.sprite_instances.empty()) {
         std::sort(render_data.sprite_instances.begin(), render_data.sprite_instances.end(),
@@ -262,12 +278,70 @@ void Renderer::render(ViewPort& viewport, RenderData& render_data) {
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
     }
+    
+    const auto& gizmos = Gizmo::get_commands();
+    if (!gizmos.empty()) {
+        glDisable(GL_DEPTH_TEST);
+        glUseProgram(context.gizmo_program_id);
+        glUniformMatrix4fv(context.gizmo_camera_loc, 1, GL_TRUE, render_data.camera->matrix.data());
+
+        for (const GizmoCommand& cmd : gizmos) {
+            std::visit([&](const auto& props) {
+                using T = std::decay_t<decltype(props)>;
+                if constexpr (std::is_same_v<T, GizmoCommand::Rect>) {
+                    glUniform4f(context.gizmo_rect_loc, props.pos.x, props.pos.y, props.size.x, props.size.y);
+                }
+                else if constexpr (std::is_same_v<T, GizmoCommand::Line>) {
+                    glUniform4f(context.gizmo_rect_loc, props.from.x, props.from.y, props.to.x, props.to.y);
+                    glUniform1f(context.gizmo_line_thickness_loc, props.thickness);
+                }
+                else if constexpr (std::is_same_v<T, GizmoCommand::Circle>) {
+                    glUniform4f(context.gizmo_rect_loc, props.pos.x, props.pos.y, props.radius, props.radius);
+                    glUniform1f(context.gizmo_line_thickness_loc, props.thickness);
+                    glUniform1i(context.gizmo_circle_segments_loc, props.segments);
+                }
+            }, cmd.props);
+            glUniform4f(context.gizmo_color_loc, cmd.color.r, cmd.color.g, cmd.color.b, cmd.color.a);
+
+            switch (cmd.shape) {
+                case GizmoShape::WireRect: {
+                    glUniform1i(context.gizmo_type_loc, 0);
+                    glDrawArrays(GL_LINE_LOOP, 0, 4);
+                    break;
+                }
+                case GizmoShape::Rect: {
+                    glUniform1i(context.gizmo_type_loc, 1);
+                    glDrawArrays(GL_TRIANGLES, 0, 6);
+                    break;
+                }
+                case GizmoShape::Line: {
+                    glUniform1i(context.gizmo_type_loc, 2);
+                    glDrawArrays(GL_TRIANGLES, 0, 6);
+                    break;
+                }
+                case GizmoShape::WireCircle: {
+                    const auto& circle = std::get<GizmoCommand::Circle>(cmd.props);
+                    glUniform1i(context.gizmo_type_loc, 3);
+                    glDrawArrays(GL_TRIANGLE_STRIP, 0, 2 * (circle.segments + 1));
+                    break;
+                }
+                case GizmoShape::Circle: {
+                    const auto& circle = std::get<GizmoCommand::Circle>(cmd.props);
+                    glUniform1i(context.gizmo_type_loc, 4);
+                    glDrawArrays(GL_TRIANGLE_FAN, 0, circle.segments + 2);
+                    break;
+                }
+            }
+        }
+        glEnable(GL_DEPTH_TEST);
+    }
 
     target->resolve();
     
     render_data.mesh_instances.clear();
     render_data.sprite_instances.clear();
     render_data.panel_instances.clear();
+    Gizmo::clear();
 }
 
 void Renderer::destroy() {

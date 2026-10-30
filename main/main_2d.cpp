@@ -296,7 +296,7 @@ int main() {
     fish.add_script<LuaScript>("assets://scripts/fish.lua");
 
     Player& player = fish.add_component<Player>();
-    player.start_position = fish.transform().position;
+    player.start_position = fish.transform.position;
     player.pixel_width = fish_sprite.rect.width;
     player.pixel_height = fish_sprite.rect.height;
 
