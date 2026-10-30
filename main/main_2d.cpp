@@ -20,6 +20,7 @@
 #include "scene2/registry.h"
 #include "scene2/systems/render_system.h"
 #include "scene2/scene.h"
+#include "scene2/scene_values.h"
 #include "scene2/systems/script_system.h"
 #include "scene2/system.h"
 
@@ -320,7 +321,7 @@ int main() {
         window2->swap_buffers();
     }
     
-    scene.save("assets://scene.ascn");
+    save_scene(scene, "assets://scene.ascn");
     ResourceManager.clear_all();
     renderer.destroy();
     app.destroy_all_windows();

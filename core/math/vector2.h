@@ -1,5 +1,6 @@
 #pragma once
 #include "core/math/vector_convert.h"
+#include "core/math/math_utils.h"
 #include <cmath>
 #include <functional>
 
@@ -34,6 +35,10 @@ struct [[nodiscard]] alignas(8) Vector2 {
     static const Vector2 Right;
     static const Vector2 Up;
     static const Vector2 Down;
+    
+    static float dot(const Vector2& a, const Vector2& b) {
+        return a.dot(b);
+    }
 
     // Indexing
     float& operator[](int axis) {
@@ -96,6 +101,15 @@ struct [[nodiscard]] alignas(8) Vector2 {
 
     constexpr bool operator!=(const Vector2& v) const {
         return !(*this == v);
+    }
+
+    bool is_equal_approx(const Vector2& v, float epsilon = Math::EPSILON) const {
+        return Math::is_equal_approx(x, v.x, epsilon) &&
+               Math::is_equal_approx(y, v.y, epsilon);
+    }
+
+    bool is_zero_approx(float epsilon = Math::EPSILON) const {
+        return Math::is_zero_approx(x, epsilon) && Math::is_zero_approx(y, epsilon);
     }
 
     // Math

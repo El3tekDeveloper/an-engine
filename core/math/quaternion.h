@@ -128,6 +128,19 @@ public:
 
     static Quaternion from_matrix(const Matrix4& mat);
 
+    // Rotation of `angle` radians around the Z axis (the 2D rotation axis).
+    static Quaternion from_z_angle(float angle) {
+        return { 0.0f, 0.0f, std::sin(angle * 0.5f), std::cos(angle * 0.5f) };
+    }
+
+    // Rotation around the Z axis in radians, in [-PI, PI].
+    // For 2D use; ignores any X/Y tilt.
+    float get_z_angle() const {
+        float sin_z = 2.0f * (_w * _z + _x * _y);
+        float cos_z = 1.0f - 2.0f * (_y * _y + _z * _z);
+        return std::atan2(sin_z, cos_z);
+    }
+
     float x() const { return _x; }
     float y() const { return _y; }
     float z() const { return _z; }

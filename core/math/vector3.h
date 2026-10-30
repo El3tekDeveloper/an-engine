@@ -1,5 +1,6 @@
 #pragma once
 #include "core/math/vector_convert.h"
+#include "core/math/math_utils.h"
 #include <cmath>
 #include <functional>
 
@@ -108,6 +109,18 @@ struct [[nodiscard]] alignas(16) Vector3 {
         return !(*this == v);
     }
 
+    bool is_equal_approx(const Vector3& v, float epsilon = Math::EPSILON) const {
+        return Math::is_equal_approx(x, v.x, epsilon) &&
+               Math::is_equal_approx(y, v.y, epsilon) &&
+               Math::is_equal_approx(z, v.z, epsilon);
+    }
+
+    bool is_zero_approx(float epsilon = Math::EPSILON) const {
+        return Math::is_zero_approx(x, epsilon) &&
+               Math::is_zero_approx(y, epsilon) &&
+               Math::is_zero_approx(z, epsilon);
+    }
+
     // Math
     float length_squared() const {
         return x*x + y*y + z*z;
@@ -214,4 +227,3 @@ inline const Vector3 Vector3::Backward = {0, 0,-1};
 inline constexpr Vector3 operator*(float s, const Vector3& v) {
     return v * s;
 }
-

@@ -16,7 +16,6 @@ const vec2 rect[6] = vec2[6](
     vec2(-0.5, -0.5), vec2(0.5, 0.5), vec2(-0.5, 0.5)
 );
 
-
 void main() {
     vec2 p;
     

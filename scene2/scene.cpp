@@ -1,12 +1,16 @@
 #include "scene.h"
-#include "core/io/file_access.h"
 #include "ecs.h"
 #include "registry.h"
 #include "game_object.h"
 #include "tools/reflector/runtime/type_registry.h"
 #include <memory>
-#include <sstream>
+#include <unordered_map>
 #include <vector>
+
+ecs::ComponentType ecs::get_unique_id(const std::string& type_name) {
+    static std::unordered_map<std::string, ComponentType> ids;
+    return ids.try_emplace(type_name, static_cast<ComponentType>(ids.size())).first->second;
+}
 
 void Scene::initialize() {
     registry = new ecs::Registry(*this);
@@ -33,43 +37,8 @@ void Scene::add_system(std::unique_ptr<System> system) {
     systems.push_back(std::move(system));
 }
 
-void Scene::save(const std::string& path) {
-    std::ostringstream out;
-    out << "[scene uid=\"" << std::to_string(make_uid(path)) << "\"]\n\n";
-
-    for (auto&  entity: entities) {
-        if (entity.mask.none())
-            continue;
-
-        out << std::format("[entity id=\"{}\"]\n", entity.id);
-
-        for (ComponentType type = 0; type < MAX_COMPONENETS; ++type) {
-            if (!entity.mask.test(type))
-                continue;
-
-            void* raw = component_pools[type]->get(entity::index(entity.id));
-            Component* comp = static_cast<Component*>(raw);
-
-            out << std::format("- [component type_name=\"{}\"]\n", comp->get_type_name());
-
-            TypeClass* tc = static_cast<TypeClass*>(get_type_by_name(comp->get_type_name()));
-            if (tc) {
-                for (Field& field : tc->get_fields()) {
-                    if (!field.is_valid()) continue;
-
-                    const void* field_ptr = reinterpret_cast<const std::byte*>(
-                        static_cast<const void*>(comp)
-                    ) + field.offset;
-                    std::string value = field.type->to_string_value(field_ptr);
-
-                    out << std::format("  - {} = {}\n", field.name, value);
-                }
-            }
-        }
-        out << "\n";
-    }
-
-    IO::write_file(path, out.str());
+Component* Scene::get_component(Entity id, ComponentType type) {
+    return static_cast<Component*>(component_pools[type]->get(entity::index(id)));
 }
 
 Entity Scene::create_entity() {

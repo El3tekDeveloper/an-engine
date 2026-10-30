@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory_resource>
+#include <string>
+#include "core/utils/demangle.h"
 
 namespace ecs {
     typedef uint64_t Entity;
@@ -62,14 +64,12 @@ namespace ecs {
         std::byte* m_data = nullptr;
     };
     
-    inline ComponentType get_unique_id() {
-        static ComponentType last = 0;
-        return last++;
-    }
+    // Keyed by name so a type keeps its id when the library defining it is reloaded.
+    ComponentType get_unique_id(const std::string& type_name);
 
     template<typename T>
     ComponentType type_id() {
-        static ComponentType id = get_unique_id();
+        static ComponentType id = get_unique_id(type_name<T>());
         return id;
     }
     

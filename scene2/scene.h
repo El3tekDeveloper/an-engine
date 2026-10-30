@@ -27,16 +27,15 @@ public:
     Scene() = default;
     virtual ~Scene() = default;
     
-    void initialize();
-    void update();
-    void draw(ViewPort& viewport, RenderData& render_data);
+    virtual void initialize();
+    virtual void update();
+    virtual void draw(ViewPort& viewport, RenderData& render_data);
     
     void add_system(std::unique_ptr<System> system);
     template<typename T>
     T& get_system();
 
     void print_scene_tree() const;
-    void save(const std::string& path);
 
     Entity create_entity();  
     void destroy(Entity id);
@@ -52,7 +51,13 @@ public:
 
     template<typename T>
     T& get_component(Entity id);
-    
+
+    template<typename T>
+    bool has_component(Entity id) const;
+
+    // For code that does not know the component's type, like saving. The entity must have it.
+    Component* get_component(Entity id, ComponentType type);
+
     template<typename T>
     void remove_component(Entity id);
     
@@ -116,6 +121,14 @@ T& Scene::get_component(Entity id) {
            && "Scene::get_component: entity does not have this component");
 
     return *static_cast<T*>(component_pools[component_id]->get(entity::index(id)));
+}
+
+template<typename T>
+bool Scene::has_component(Entity id) const {
+    auto component_id = type_id<T>();
+    if (entity::index(id) >= entities.size())
+        return false;
+    return entities[entity::index(id)].mask.test(component_id);
 }
 
 template<typename T>
